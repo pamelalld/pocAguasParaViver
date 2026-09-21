@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, url_for, redirect, flash
+from flask import Flask, render_template, request, url_for, redirect, flash, session
 
 from extensions import db
 from sqlalchemy.sql import func
@@ -8,7 +8,10 @@ import logging as log
 from werkzeug.utils import secure_filename
 
 from dao.nascente.createNascente import inserirNascente
-from dao.nascente.readNascente import listarNascentes,listarNascentesValidas
+from dao.nascente.updateNascente import atualizarNascente
+from dao.nascente.readNascente import listarNascentes,listarNascentesValidas, listarNascentesPendentes
+
+from dao.usuario.createUsuario import inserirUsuario
 
 from models.nascente import Nascente
 from models.usuario import Usuario
@@ -17,10 +20,75 @@ from models.usuario import Usuario
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///C:/vs_code_projetos/POC_AguasParaViver/database/database.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///C:/Users/Ana/Documents/Faculdade/2026-2/Extensão/pocAguasParaViver/database/database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+
+#Rotas de login, logout e cadastro de usuario
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+
+        email = request.form["email"]
+        senha = request.form["password"]
+        tipoUsuario = request.form["tipoUsuario"]
+
+        usuario = Usuario.query.filter_by(
+            email=email,
+            tipoUsuario=tipoUsuario
+        ).first()
+
+        if usuario and usuario.senha == senha:
+
+            session["usuario"] = usuario.nomeUsuario
+            session["tipoUsuario"] = usuario.tipoUsuario
+
+            return redirect("/")
+
+        flash("Usuário não encontrado.", "error")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        nomeUsuario = request.form["nomeUsuario"]
+        email = request.form["email"]
+        senha = request.form["senha"]
+
+        usuarioExistente = Usuario.query.filter_by(email=email).first()
+
+        if usuarioExistente:
+            flash("E-mail já cadastrado.", "error")
+            return redirect("/register")
+
+        usuario = Usuario(nomeUsuario=nomeUsuario, senha=senha, email=email, tipoUsuario="MEMBRO")
+
+        resultado = inserirUsuario(usuario)
+
+        if "erro" in resultado:
+            flash("Erro ao realizar cadastro.", "error")
+            return redirect("/register")
+
+        flash("Cadastro realizado com sucesso!", "success")
+        return redirect("/login")
+
+    return render_template("register.html")
+
+
+
+#rotas de Visualização e cadastro de mapas
 
 @app.route("/")
 def mainPage():
@@ -34,8 +102,12 @@ def mainPage():
         nascentes=listaNascentesValidas
     )
 
-@app.route("/cadastrarNascente", methods=["GET","POST"])
+@app.route("/mapa/registrar", methods=["GET","POST"])
 def cadastrarNascente():
+
+    if not session.get("usuario"):
+        return redirect("/login")
+    
     if request.method == "POST":
 
         endereco = request.form["endereco"]
@@ -61,6 +133,71 @@ def cadastrarNascente():
 
 
     return render_template("cadastrarNascente.html")
+
+
+#Rotas de Visualização e edição de nascentes
+
+@app.route("/dashboard/nascentes")
+def dashboardNascentes():
+
+    nascentesPendentes = listarNascentesPendentes()
+    nascentesAprovadas = listarNascentesValidas()
+
+    return render_template("dashboardNascentes.html", nascentesPendentes=nascentesPendentes, nascentesAprovadas=nascentesAprovadas)
+
+@app.route("/dashboard/nascentes/<int:id>/editar", methods=["GET", "POST"])
+def editarNascente(id):
+
+    nascente = Nascente.query.get(id)
+
+    if not nascente:
+        flash("Nascente não encontrada.", "error")
+        return redirect("/dashboard/nascentes")
+
+    if request.method == "POST":
+
+        descricao = request.form["descricao"]
+        acao = request.form["acao"]
+
+        imagem = request.files.get("imagem")
+
+        nomeImagem = None
+
+        if imagem and imagem.filename:
+
+            nomeImagem = secure_filename(imagem.filename)
+            caminhoImagem = os.path.join("uploads",nomeImagem)
+
+            imagem.save(os.path.join(app.static_folder, caminhoImagem))
+
+
+        if acao == "validar":
+            status = "APROVADA"
+        elif acao == "invalidar":
+            status = "DESAPROVADA"
+        else:
+            status = nascente.status
+
+        resultado = atualizarNascente(
+            id,
+            nomeImagem,
+            descricao,
+            status
+        )
+
+
+        if "erro" in resultado:
+            flash("Erro ao atualizar nascente.", "error")
+
+            return redirect(f"/dashboard/nascentes/{id}/editar")
+
+
+        flash("Nascete atualizada com sucesso!", "success")
+
+        return redirect("/dashboard/nascentes")
+
+
+    return render_template("editarNascente.html", nascente=nascente)
 
 if __name__ == "__main__":
 

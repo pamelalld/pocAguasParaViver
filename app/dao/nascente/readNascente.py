@@ -12,9 +12,18 @@ def listarNascentes():
 
 def listarNascentesValidas():
     try:
-        nascentes = Nascente.query.filter_by(status="VALIDO").all()
+        nascentes = Nascente.query.filter_by(status="APROVADA").all()
 
         return nascentes
 
+    except Exception as e:
+        return {"erro": str(e)}
+
+def listarNascentesPendentes():
+    try:
+        nascentes = Nascente.query.filter_by(status="PENDENTE").all()
+
+        return nascentes
+    
     except Exception as e:
         return {"erro": str(e)}

@@ -1,9 +1,15 @@
 <!DOCTYPE html>
+
 <html lang="pt-br">
+
 <head>
+
     <meta charset="UTF-8">
+
     <title>Nascentes</title>
+
     <style>
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -13,6 +19,12 @@
 
         h1 {
             text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            max-width: 1200px;
+            margin: 30px auto 15px;
         }
 
         .nascentes {
@@ -20,7 +32,7 @@
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
             max-width: 1200px;
-            margin: 30px auto;
+            margin: 0 auto 40px;
         }
 
         .nascente {
@@ -55,31 +67,189 @@
             text-decoration: none;
             border-radius: 8px;
         }
+
+        .waybar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: white;
+        }
+
+        .logo {
+            font-weight: bold;
+        }
+
+        .usuario {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .usuario a {
+            text-decoration: none;
+        }
+
     </style>
+
 </head>
+
+
 <body>
 
-    <a href="{{ url_for('cadastrarNascente') }}" class="botao-cadastrar">
+
+    <!-- WAYBAR -->
+
+    <nav class="waybar">
+
+        <div class="logo">
+            Águas para Viver
+        </div>
+
+        <div class="usuario">
+
+            {% if session.get("usuario") %}
+
+                <span>{{ session.get("usuario") }}</span>
+
+                {% if session.get("tipoUsuario") == "ADMINISTRADOR" %}
+                    <a href="/dashboard/nascentes">Dashboard</a>
+                {% endif %}
+
+                <a href="/logout">Sair</a>
+
+            {% else %}
+
+                <a href="/login">Entrar</a>
+
+            {% endif %}
+
+        </div>
+
+    </nav>
+
+
+    <!-- BOTÃO CADASTRAR -->
+
+    <a
+        href="{{ url_for('cadastrarNascente') }}"
+        class="botao-cadastrar"
+    >
         Cadastrar Nascente
     </a>
 
+
     <h1>Nascentes</h1>
 
-    <div class="nascentes">
-        {% if nascentes %}
-            {% for nascente in nascentes %}
-            <div class="nascente">
-                <img src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}">
 
-                <div class="informacoes">
-                    <p><strong>Latitude:</strong> {{ nascente.latitude }}</p>
-                    <p><strong>Longitude:</strong> {{ nascente.longitude }}</p>
-                    <p><strong>Descrição:</strong> {{ nascente.descricao }}</p>
+    <!-- NASCENTES APROVADAS -->
+
+    <h2>Nascentes Aprovadas</h2>
+
+    <div class="nascentes">
+
+        {% set aprovadas = nascentes | selectattr("status", "equalto", "APROVADA") | list %}
+
+        {% if aprovadas %}
+
+            {% for nascente in aprovadas %}
+
+                <div class="nascente">
+
+                    <img
+                        src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
+                        alt="Imagem da nascente"
+                    >
+
+                    <div class="informacoes">
+
+                        <p>
+                            <strong>Latitude:</strong>
+                            {{ nascente.latitude }}
+                        </p>
+
+                        <p>
+                            <strong>Longitude:</strong>
+                            {{ nascente.longitude }}
+                        </p>
+
+                        <p>
+                            <strong>Descrição:</strong>
+                            {{ nascente.descricao }}
+                        </p>
+
+                    </div>
+
                 </div>
-            </div>
+
             {% endfor %}
+
+        {% else %}
+
+            <p>
+                Não existem nascentes aprovadas.
+            </p>
+
         {% endif %}
+
     </div>
 
+
+    <!-- NASCENTES PENDENTES -->
+    {% if session.get("tipoUsuario") == "ADMINISTRADOR" %}
+    <h2>Nascentes Pendentes</h2>
+
+    <div class="nascentes">
+
+        {% set pendentes = nascentes | selectattr("status", "equalto", "PENDENTE") | list %}
+
+        {% if pendentes %}
+
+            {% for nascente in pendentes %}
+
+                <div class="nascente">
+
+                    <img
+                        src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
+                        alt="Imagem da nascente"
+                    >
+
+                    <div class="informacoes">
+
+                        <p>
+                            <strong>Latitude:</strong>
+                            {{ nascente.latitude }}
+                        </p>
+
+                        <p>
+                            <strong>Longitude:</strong>
+                            {{ nascente.longitude }}
+                        </p>
+
+                        <p>
+                            <strong>Descrição:</strong>
+                            {{ nascente.descricao }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p>
+                Não existem nascentes pendentes.
+            </p>
+
+        {% endif %}
+    {% endif %}
+
+    </div>
+
+
 </body>
+
 </html>
+
