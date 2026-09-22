@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Flask, render_template, request, url_for, redirect, flash, session
 
 from extensions import db
@@ -20,7 +21,7 @@ from models.usuario import Usuario
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///C:/Users/Ana/Documents/Faculdade/2026-2/Extensão/pocAguasParaViver/database/database.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///' + os.path.join(basedir, 'database.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -101,6 +102,28 @@ def mainPage():
         "nascentes.html",
         nascentes=listaNascentesValidas
     )
+
+@app.route("/mapa")
+def mapa():
+
+    nascentes = listarNascentes()
+
+    nascentesMapa = [
+        {
+            "id": nascente.id,
+            "endereco": nascente.endereco,
+            "latitude": nascente.latitude,
+            "longitude": nascente.longitude,
+            "descricao": nascente.descricao,
+            "imagem": url_for("static", filename="uploads/" + nascente.imagem),
+            "status": nascente.status,
+        }
+        for nascente in nascentes
+    ]
+
+    nascentesJSON = json.dumps(nascentesMapa).replace("<", "\\u003c")
+
+    return render_template("mapa.html", nascentesJSON=nascentesJSON)
 
 @app.route("/mapa/registrar", methods=["GET","POST"])
 def cadastrarNascente():

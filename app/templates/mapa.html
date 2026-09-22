@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa de Nascentes</title>
+
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    #map { width: 100vw; height: 100vh; }
+
+    .marcador {
+      width: 28px;
+      height: 28px;
+      background: #e74c3c;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, .4);
+      cursor: pointer;
+    }
+
+    .popup {
+      text-align: center;
+      font-family: sans-serif;
+    }
+
+    .popup img {
+      width: 100%;
+      max-width: 300px;
+      border-radius: 4px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .popup .endereco {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .popup .descricao {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .popup a {
+      display: inline-block;
+      padding: 8px 12px;
+      background: #4285f4;
+      color: #fff;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <script>
+    const NASCENTES = {{ nascentesJSON | safe }};
+
+    const PARA_DE_MINAS = { lat: -19.857, lng: -44.601 };
+
+    const MAX_BOUNDS = [
+      [-44.70, -19.94],
+      [-44.50, -19.78]
+    ];
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [PARA_DE_MINAS.lng, PARA_DE_MINAS.lat],
+      zoom: 13,
+      maxBounds: MAX_BOUNDS,
+      maxBoundsViscosity: 1.0,
+      minZoom: 11,
+      maxZoom: 18
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    function escapeHTML(valor) {
+      const div = document.createElement('div');
+      div.textContent = valor == null ? '' : String(valor);
+      return div.innerHTML;
+    }
+
+    function buildPopupHTML(nascente) {
+      const googleMapsURL = `https://www.google.com/maps/search/?api=1&query=${nascente.latitude},${nascente.longitude}`;
+
+      const imagem = nascente.imagem
+        ? `<img src="${escapeHTML(nascente.imagem)}" alt="Imagem da nascente" onerror="this.style.display='none'" />`
+        : '';
+
+      const descricao = nascente.descricao
+        ? `<span class="descricao">${escapeHTML(nascente.descricao)}</span>`
+        : '';
+
+      return `
+        <div class="popup">
+          ${imagem}
+          <strong class="endereco">${escapeHTML(nascente.endereco)}</strong>
+          ${descricao}
+          <a href="${googleMapsURL}" target="_blank" rel="noopener noreferrer">
+            Abrir no Google Maps
+          </a>
+        </div>`;
+    }
+
+    NASCENTES.forEach(function (nascente) {
+      const el = document.createElement('div');
+      el.className = 'marcador';
+      el.title = nascente.endereco;
+
+      new maplibregl.Marker({ element: el })
+        .setLngLat([nascente.longitude, nascente.latitude])
+        .setPopup(
+          new maplibregl.Popup({ maxWidth: '320px' })
+            .setHTML(buildPopupHTML(nascente))
+        )
+        .addTo(map);
+    });
+  </script>
+
+</body>
+</html>
