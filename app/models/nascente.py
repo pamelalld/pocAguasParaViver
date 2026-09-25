@@ -13,6 +13,8 @@ class Nascente(db.Model):
     descricao = db.Column(db.Text, nullable=True)
     status = db.Column(db.Text, nullable=False)
 
+    visitas = db.relationship("VisitaNascente", back_populates="nascente", cascade="all, delete-orphan", order_by="desc(VisitaNascente.dataVisita)")
+
     def __init__(self, endereco, latitude, longitude, imagem, descricao, status):
         self.endereco = endereco
         self.latitude = latitude

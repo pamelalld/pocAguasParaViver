@@ -10,12 +10,16 @@ from werkzeug.utils import secure_filename
 
 from dao.nascente.createNascente import inserirNascente
 from dao.nascente.updateNascente import atualizarNascente
-from dao.nascente.readNascente import listarNascentes,listarNascentesValidas, listarNascentesPendentes
+from dao.nascente.readNascente import listarNascentes,listarNascentesValidas, listarNascentesPendentes, buscarNascentePorId
 
 from dao.usuario.createUsuario import inserirUsuario
 
+from dao.visitaNascente.createVisita import criarVisita
+from dao.visitaNascente.readVisita import listarVisitasNascente
+
 from models.nascente import Nascente
 from models.usuario import Usuario
+from models.visitaNascente import VisitaNascente
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -158,6 +162,16 @@ def cadastrarNascente():
     return render_template("cadastrarNascente.html")
 
 
+#Rota de redirecionamento edita ou historico nascente
+
+@app.route("/dashboard/nascentes/<int:id>")
+def detalhesNascente(id):
+
+    nascente = buscarNascentePorId(id)
+
+    return render_template("detalhesNascente.html",nascente=nascente)
+
+
 #Rotas de Visualização e edição de nascentes
 
 @app.route("/dashboard/nascentes")
@@ -215,12 +229,26 @@ def editarNascente(id):
             return redirect(f"/dashboard/nascentes/{id}/editar")
 
 
-        flash("Nascete atualizada com sucesso!", "success")
+        visita = VisitaNascente(idNascente=id,imagem=nomeImagem if nomeImagem else nascente.imagem,descricao=descricao)
+
+        log.info(criarVisita(visita))
+        flash("Visita registrada com sucesso", "success")
 
         return redirect("/dashboard/nascentes")
 
 
     return render_template("editarNascente.html", nascente=nascente)
+
+#Rota de visualização do historico de uma anscente
+
+@app.route("/dashboard/nascentes/<int:id>/historico")
+def historicoNascente(id):
+
+    visitas = listarVisitasNascente(id)
+
+    nascente = buscarNascentePorId(id)
+
+    return render_template("historicoVisitas.html",nascente=nascente,visitas=visitas)
 
 if __name__ == "__main__":
 
