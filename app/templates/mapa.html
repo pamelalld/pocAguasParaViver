@@ -12,6 +12,33 @@
     html, body { width: 100%; height: 100%; overflow: hidden; }
     #map { width: 100vw; height: 100vh; }
 
+    
+    #btnCadastrar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 6px;
+      background: #4285f4;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    #mensagemCadastro {
+      display: none;
+      position: absolute;
+      top: 70px;
+      left: 20px;
+      z-index: 10;
+      background: white;
+      padding: 10px 14px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+
     .marcador {
       width: 28px;
       height: 28px;
@@ -61,6 +88,11 @@
 
   <div id="map"></div>
 
+  <button id="btnCadastrar">Cadastrar nascente</button>
+  <div id="mensagemCadastro">
+    Clique no mapa para escolher a localização da nascente.
+  </div>
+
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 
   <script>
@@ -104,15 +136,61 @@
         : '';
 
       return `
-        <div class="popup">
-          ${imagem}
-          <strong class="endereco">${escapeHTML(nascente.endereco)}</strong>
-          ${descricao}
+      <div class="popup">
+        ${imagem}
+        <strong class="endereco">${escapeHTML(nascente.endereco)}</strong>
+        ${descricao}
+          <a href="/dashboard/nascentes/${nascente.id}/editar">Editar</a>
           <a href="${googleMapsURL}" target="_blank" rel="noopener noreferrer">
             Abrir no Google Maps
           </a>
         </div>`;
     }
+
+    let modoCadastro = false;
+    let marcadorCadastro = null;
+
+    const btnCadastrar = document.getElementById("btnCadastrar");
+    const mensagemCadastro = document.getElementById("mensagemCadastro");
+
+    btnCadastrar.addEventListener("click", function () {
+        modoCadastro = true;
+
+        mensagemCadastro.style.display = "block";
+        mensagemCadastro.textContent =
+            "Clique no mapa para escolher a localização da nascente.";
+
+        btnCadastrar.disabled = true;
+        btnCadastrar.style.opacity = "0.6";
+    });
+
+    map.on("click", function (e) {
+
+      if (!modoCadastro) {
+          return;
+      }
+
+      const latitude = e.lngLat.lat;
+      const longitude = e.lngLat.lng;
+
+      if (marcadorCadastro) {
+          marcadorCadastro.remove();
+      }
+
+      marcadorCadastro = new maplibregl.Marker()
+          .setLngLat([longitude, latitude])
+          .addTo(map);
+
+      mensagemCadastro.textContent =
+          "Localização selecionada. Clique no marcador para cadastrar.";
+
+      marcadorCadastro.getElement().addEventListener("click", function () {
+
+          window.location.href =
+              `/mapa/registrar?latitude=${latitude}&longitude=${longitude}`;
+
+      });
+    });
 
     NASCENTES.forEach(function (nascente) {
       const el = document.createElement('div');

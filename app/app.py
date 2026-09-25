@@ -48,7 +48,7 @@ def login():
             session["usuario"] = usuario.nomeUsuario
             session["tipoUsuario"] = usuario.tipoUsuario
 
-            return redirect("/")
+            return redirect("/mapa")
 
         flash("Usuário não encontrado.", "error")
 
@@ -150,7 +150,7 @@ def cadastrarNascente():
         nascente = Nascente(endereco,latitude,longitude,nomeImagem,descricao,status)
 
         log.info(f"{inserirNascente(nascente)}")
-        flash("Nscente cadastrada com sucesso!", "success")
+        flash("Nascente cadastrada com sucesso!", "success")
 
         return redirect("/")
 
