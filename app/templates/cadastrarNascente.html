@@ -64,11 +64,8 @@
         <label for="endereco">Endereço</label>
         <input type="text" id="endereco" name="endereco" required>
 
-        <label for="latitude">Latitude</label>
-        <input type="number" id="latitude" name="latitude" step="any" required>
-
-        <label for="longitude">Longitude</label>
-        <input type="number" id="longitude" name="longitude" step="any" required>
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
 
         <label for="imagem">Imagem</label>
         <input type="file" id="imagem" name="imagem" accept="image/*" required>
@@ -81,6 +78,16 @@
 
     </form>
 </div>
+
+<script>
+    const parametros = new URLSearchParams(window.location.search);
+
+    const latitude = parametros.get("latitude");
+    const longitude = parametros.get("longitude");
+
+    document.getElementById("latitude").value = latitude;
+    document.getElementById("longitude").value = longitude;
+</script>
 
 </body>
 </html>
