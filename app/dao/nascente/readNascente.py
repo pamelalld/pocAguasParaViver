@@ -27,3 +27,15 @@ def listarNascentesPendentes():
     
     except Exception as e:
         return {"erro": str(e)}
+
+def buscarNascentePorId(id):
+    try:
+        nascente = db.session.get(Nascente, id)
+
+        if not nascente:
+            return {"erro": "Nascente não encontrada."}
+
+        return nascente
+
+    except Exception as e:
+        return {"erro": str(e)}
