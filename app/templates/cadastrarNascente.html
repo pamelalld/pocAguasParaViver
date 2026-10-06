@@ -87,6 +87,34 @@
 
     document.getElementById("latitude").value = latitude;
     document.getElementById("longitude").value = longitude;
+
+    const campoEndereco = document.getElementById("endereco");
+
+    async function preencherEnderecoAutomaticamente(lat, lng) {
+        if (!lat || !lng) return;
+
+        campoEndereco.placeholder = "Buscando endereço...";
+        campoEndereco.disabled = true;
+
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&accept-language=pt-BR`;
+            const resposta = await fetch(url);
+
+            if (!resposta.ok) throw new Error("Falha na busca do endereço");
+
+            const dados = await resposta.json();
+
+            if (dados && dados.display_name) {
+                campoEndereco.value = dados.display_name;
+            }
+        } catch (e) {
+            campoEndereco.placeholder = "Não foi possível buscar o endereço. Digite manualmente.";
+        } finally {
+            campoEndereco.disabled = false;
+        }
+    }
+
+    preencherEnderecoAutomaticamente(latitude, longitude);
 </script>
 
 </body>
