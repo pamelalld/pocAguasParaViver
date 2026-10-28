@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Documentos da nascente</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f5;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        .topo {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitulo {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .info {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background-color: #f4f6f5;
+            border-radius: 8px;
+        }
+
+        .info div {
+            overflow-wrap: anywhere;
+        }
+
+        .info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .lista-documentos {
+            margin-top: 25px;
+        }
+
+        .card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 18px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .nome-documento {
+            overflow-wrap: anywhere;
+            flex: 1;
+        }
+
+        .botoes-documento {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .botao {
+            display: inline-block;
+            padding: 10px 16px;
+            background-color: #287a50;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .botao:hover {
+            background-color: #205f3e;
+        }
+
+        .botao-excluir {
+            background-color: #c0392b;
+        }
+
+        .botao-excluir:hover {
+            background-color: #922b21;
+        }
+
+        .secao-adicionar {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f4f6f5;
+            border-radius: 8px;
+        }
+
+        .secao-adicionar h2 {
+            margin-top: 0;
+        }
+
+        .formulario-documentos {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            max-width: 100%;
+        }
+
+        .vazio {
+            padding: 25px;
+            margin-top: 20px;
+            background-color: #f4f6f5;
+            text-align: center;
+            border-radius: 8px;
+            color: #666;
+        }
+
+        .acoes {
+            margin-top: 25px;
+        }
+
+        .mensagem {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #e8f5e9;
+            color: #205f3e;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .info {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .botoes-documento {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="topo">
+
+        <h1>Documentos da nascente</h1>
+
+        <p class="subtitulo">
+            Nascente #{{ nascente.id }}
+        </p>
+
+        <div class="info">
+
+            <div>
+                <strong>Endereço</strong>
+                {{ nascente.endereco }}
+            </div>
+
+            <div>
+                <strong>Status atual</strong>
+                {{ nascente.status }}
+            </div>
+
+            <div>
+                <strong>Latitude</strong>
+                {{ nascente.latitude }}
+            </div>
+
+            <div>
+                <strong>Longitude</strong>
+                {{ nascente.longitude }}
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="lista-documentos">
+
+        <h2>Documentos carregados</h2>
+
+        {% if documentos %}
+
+            {% for doc in documentos %}
+
+                <div class="card">
+
+                    <div class="nome-documento">
+                        📄 {{ doc.nome }}
+                    </div>
+
+                    <div class="botoes-documento">
+
+                        <a
+                            href="{{ url_for('abrirDocumento', nascente_id=nascente.id, documento_id=doc.id) }}"
+                            class="botao"
+                            target="_blank"
+                            rel="noopener noreferrer">
+                            Visualizar PDF
+                        </a>
+
+                        <form
+                            action="{{ url_for('removerDocumento', nascente_id=nascente.id, documento_id=doc.id) }}"
+                            method="POST"
+                            onsubmit="return confirm('Tem certeza de que deseja excluir este documento?');">
+
+                            <button
+                                type="submit"
+                                class="botao botao-excluir">
+                                Excluir
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="vazio">
+                Nenhum documento disponível para essa nascente.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+    <div class="secao-adicionar">
+
+        <h2>Adicionar documentos</h2>
+
+        <form
+            action="{{ url_for('adicionarDocumento', nascente_id=nascente.id) }}"
+            method="POST"
+            enctype="multipart/form-data"
+
+            <label for="documentos"> Selecione um arquivo PDF: </label>
+
+            <input
+                type="file"
+                id="documentos"
+                name="documentos"
+                accept=".pdf"
+                required>
+
+            <button type="submit" class="botao">
+                Adicionar documentos
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="acoes">
+
+        <a
+            href="{{ url_for('dashboardNascentes') }}"
+            class="botao">
+            Voltar
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>
