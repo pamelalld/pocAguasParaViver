@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Águas para Viver</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .quadro_branco {
+            background-color: white;
+            width: 400px;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .centered-content {
+            text-align: center;
+        }
+
+        .campo {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .campo label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .campo input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .Botao {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="quadro_branco">
+
+            <div class="centered-content">
+
+                <h2>Olá! Vai ser um prazer te ter conosco!</h2>
+
+                <p>
+                    Cadastre-se no Sistema Águas Para Viver.
+                </p>
+                {% with mensagens = get_flashed_messages(with_categories=true) %}
+                    {% if mensagens %}
+                        {% for categoria, mensagem in mensagens %}
+                            <p, color="red">{{ mensagem }}</p>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <form action="/register" method="POST">
+                    <div class="campo">
+                        <label for="nomeUsuario">Nome</label>
+                        <input
+                            id="nomeUsuario"
+                            name="nomeUsuario"
+                            type="text"
+                            required>
+                    </div>
+
+                    <div class="campo">
+                        <label for="email">E-mail</label>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            required>
+                    </div>
+
+                    <div class="campo">
+                        <label for="senha">Senha</label>
+                        <input
+                            id="senha"
+                            name="senha"
+                            type="password"
+                            required>
+                    </div>
+
+                    <button type="submit">
+                        Cadastrar
+                    </button>
+                    <p>Já tem uma conta?
+                        <a href="{{ url_for('login') }}">Ir para o login</a>
+                    </p>
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
