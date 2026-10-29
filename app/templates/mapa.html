@@ -100,23 +100,83 @@
 
     const PARA_DE_MINAS = { lat: -19.857, lng: -44.601 };
 
-    const MAX_BOUNDS = [
-      [-44.70, -19.94],
-      [-44.50, -19.78]
-    ];
+    // RESTRIÇÃO PARA DE MINAS (descomentar os blocos abaixo para reativar)
+    // const MAX_BOUNDS = [
+    //   [-44.70, -19.94],
+    //   [-44.50, -19.78]
+    // ];
 
     const map = new maplibregl.Map({
       container: 'map',
       style: 'https://tiles.openfreemap.org/styles/liberty',
       center: [PARA_DE_MINAS.lng, PARA_DE_MINAS.lat],
       zoom: 13,
-      maxBounds: MAX_BOUNDS,
-      maxBoundsViscosity: 1.0,
+      // maxBounds: MAX_BOUNDS,
+      // maxBoundsViscosity: 1.0,
       minZoom: 11,
       maxZoom: 18
     });
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    const CHAVE_CACHE_LOCALIZACAO = 'mapaLocalizacaoUsuario';
+
+    function obterLocalizacaoCacheada() {
+      try {
+        const bruto = localStorage.getItem(CHAVE_CACHE_LOCALIZACAO);
+        if (!bruto) return null;
+
+        const dados = JSON.parse(bruto);
+        if (typeof dados.lat === 'number' && typeof dados.lng === 'number') {
+          return dados;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function aplicarLocalizacao(lat, lng) {
+      const el = document.createElement('div');
+      el.className = 'marcador';
+      el.title = 'Sua localização';
+
+      new maplibregl.Marker({ element: el })
+        .setLngLat([lng, lat])
+        .addTo(map);
+
+      map.flyTo({ center: [lng, lat] });
+    }
+
+    function iniciarLocalizacaoUsuario() {
+      const cache = obterLocalizacaoCacheada();
+
+      if (cache) {
+        aplicarLocalizacao(cache.lat, cache.lng);
+        return;
+      }
+
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+
+          localStorage.setItem(
+            CHAVE_CACHE_LOCALIZACAO,
+            JSON.stringify({ lat: lat, lng: lng })
+          );
+
+          aplicarLocalizacao(lat, lng);
+        },
+        function () {
+          // Permissão negada/indisponível: nada é salvo em cache,
+          // então na próxima recarga da página o navegador será consultado novamente.
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    iniciarLocalizacaoUsuario();
 
     function escapeHTML(valor) {
       const div = document.createElement('div');
