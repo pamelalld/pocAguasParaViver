@@ -60,6 +60,10 @@ img{
     background:#0d6efd;
 }
 
+.documentos {
+    background: #287a50;
+}
+
 .voltar{
     background:#777;
 }
@@ -92,6 +96,12 @@ img{
 class="botao editar"
 href="{{ url_for('editarNascente', id=nascente.id) }}">
 Editar
+</a>
+
+<a
+class="botao documentos"
+href="{{ url_for('documentosNascente', nascente_id=nascente.id) }}">
+Acessar documentos
 </a>
 
 <a

@@ -1,12 +1,12 @@
 import os
 import json
-from flask import Flask, render_template, request, url_for, redirect, flash, session
+from flask import Flask, render_template, request, url_for, redirect, flash, session, abort, send_from_directory, current_app
 
 from extensions import db
 from sqlalchemy.sql import func
 
 import logging as log
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, safe_join
 
 from dao.nascente.createNascente import inserirNascente
 from dao.nascente.updateNascente import atualizarNascente
@@ -17,9 +17,14 @@ from dao.usuario.createUsuario import inserirUsuario
 from dao.visitaNascente.createVisita import criarVisita
 from dao.visitaNascente.readVisita import listarVisitasNascente
 
+from dao.documentoNascente.createDocumento import criarDocumento
+from dao.documentoNascente.deleteDocumento import excluirDocumento
+from dao.documentoNascente.readDocumento import buscarDocumentoPorId, buscarDocumentosNascente
+
 from models.nascente import Nascente
 from models.usuario import Usuario
 from models.visitaNascente import VisitaNascente
+from models.documentoNascente import DocumentoNascente
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -29,7 +34,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///' + os.path.join(basedir, 'd
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-
 
 #Rotas de login, logout e cadastro de usuario
 
@@ -249,6 +253,109 @@ def historicoNascente(id):
     nascente = buscarNascentePorId(id)
 
     return render_template("historicoVisitas.html",nascente=nascente,visitas=visitas)
+
+
+
+#busca os documentos da nascente
+@app.route("/nascentes/<int:nascente_id>/documentos", methods=["GET"])
+def documentosNascente(nascente_id):
+    nascente = db.session.get(Nascente, nascente_id)
+
+    if nascente is None:
+        abort(404)
+
+    resultado = buscarDocumentosNascente(nascente_id)
+
+    if "erro" in resultado:
+        abort(500)
+
+    documentos = resultado["documentos"]
+
+    return render_template("documentosNascente.html",nascente=nascente,documentos=documentos)
+
+
+#rota que exibe o documento
+@app.route("/nascentes/<int:nascente_id>/documentos/<int:documento_id>", methods=["GET"])
+def abrirDocumento(nascente_id, documento_id):
+    resultado = buscarDocumentoPorId(documento_id)
+
+    if "erro" in resultado:
+        abort(404)
+
+    documento = resultado["documento"]
+
+    diretorio = os.path.join(current_app.static_folder, "uploads", "documentos")
+
+    caminho = safe_join(diretorio, documento.caminho)
+
+    if caminho is None or not os.path.isfile(caminho):
+        abort(404)
+
+    return send_from_directory(diretorio, documento.caminho, mimetype="application/pdf", as_attachment=False)
+
+
+
+#Rota para excluir um documento da nascente
+@app.route("/nascentes/<int:nascente_id>/documentos/<int:documento_id>/excluir", methods=["POST"])
+def removerDocumento(nascente_id,documento_id):
+
+    resultado = buscarDocumentoPorId(documento_id)
+
+    if "erro" in resultado:
+        abort(404)
+
+    documento = resultado["documento"]
+
+    nascente_id = documento.nascente_id
+
+    diretorio = os.path.join(current_app.static_folder, "uploads", "documentos")
+
+    caminho = safe_join(diretorio, documento.caminho)
+
+    if caminho is None or not os.path.isfile(caminho):
+        flash("O arquivo PDF não foi encontrado no sistema.")
+        return redirect(url_for("documentosNascente", nascente_id=nascente_id))
+
+    resultado_exclusao = excluirDocumento(documento_id)
+
+    if "erro" in resultado_exclusao:
+        flash("Não foi possível excluir o documento.")
+        return redirect(url_for("documentosNascente", nascente_id=nascente_id))
+
+    os.remove(caminho)
+
+    flash("Documento excluído com sucesso!")
+
+    return redirect(url_for("documentosNascente", nascente_id=nascente_id))
+
+
+
+#adicionar um documento a nascente
+@app.route("/nascentes/<int:nascente_id>/documentos/adicionar", methods=["POST"])
+def adicionarDocumento(nascente_id):
+    arquivo = request.files["documentos"]
+
+    nome = secure_filename(arquivo.filename)
+
+    diretorio = os.path.join(current_app.static_folder, "uploads", "documentos")
+
+    os.makedirs(diretorio, exist_ok=True)
+
+    caminho = os.path.join(diretorio, nome)
+    arquivo.save(caminho)
+
+    documento = DocumentoNascente(nome=nome,caminho=nome,nascente_id=nascente_id)
+
+    resultado = criarDocumento(documento)
+
+    if "erro" in resultado:
+        if os.path.isfile(caminho):
+            os.remove(caminho)
+        abort(500)
+
+    return redirect(url_for("documentosNascente", nascente_id=nascente_id))
+
+
 
 if __name__ == "__main__":
 
