@@ -56,6 +56,26 @@
             margin: 8px 0;
         }
 
+        .aviso-pendentes {
+            max-width: 1200px;
+            margin: 0 auto 15px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background-color: #fef3cd;
+            color: #8a6100;
+        }
+
+        .badge-pendente {
+            display: inline-block;
+            margin-bottom: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background-color: #fef3cd;
+            color: #8a6100;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
         .botao-cadastrar {
             position: fixed;
             bottom: 30px;
@@ -198,8 +218,12 @@
 
 
     <!-- NASCENTES PENDENTES -->
-    {% if session.get("tipoUsuario") == "ADMINISTRADOR" %}
+
     <h2>Nascentes Pendentes</h2>
+
+    <p class="aviso-pendentes">
+        Essas nascentes aguardam aprovação de um administrador.
+    </p>
 
     <div class="nascentes">
 
@@ -217,6 +241,10 @@
                     >
 
                     <div class="informacoes">
+
+                        <span class="badge-pendente">
+                            Pendente de aprovação
+                        </span>
 
                         <p>
                             <strong>Latitude:</strong>
@@ -246,7 +274,6 @@
             </p>
 
         {% endif %}
-    {% endif %}
 
     </div>
 

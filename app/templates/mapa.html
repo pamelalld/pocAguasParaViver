@@ -39,6 +39,41 @@
       box-shadow: 0 2px 6px rgba(0,0,0,.2);
     }
 
+    #linkDashboard {
+      position: absolute;
+      top: 20px;
+      left: 185px;
+      z-index: 10;
+      padding: 12px 18px;
+      border-radius: 6px;
+      background: #1e7e34;
+      color: white;
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+    }
+
+    #infoUsuario {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      background: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    #infoUsuario a {
+      color: #1a73e8;
+      text-decoration: none;
+    }
+
     .marcador {
       width: 28px;
       height: 28px;
@@ -71,6 +106,40 @@
       width: 14px;
       height: 14px;
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2z'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+
+    .marcador-nascente-pendente {
+      background: #f39c12;
+      animation: pulsar-pendente 1.6s infinite;
+    }
+
+    .marcador-nascente-reprovada {
+      background: #c0392b;
+    }
+
+    @keyframes pulsar-pendente {
+      0% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
+    }
+
+    .status-badge {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .status-pendente {
+      background: #fef3cd;
+      color: #8a6100;
+    }
+
+    .status-reprovada {
+      background: #f8d7da;
+      color: #842029;
     }
 
     .popup-confirmacao button {
@@ -128,14 +197,34 @@
   <div id="map"></div>
 
   <button id="btnCadastrar">Cadastrar nascente</button>
+
+  {% if is_admin %}
+    <a id="linkDashboard" href="/dashboard/nascentes">Dashboard</a>
+  {% endif %}
+
   <div id="mensagemCadastro">
     Clique no mapa para escolher a localização da nascente.
   </div>
 
+  {% if usuario_logado %}
+    <div id="infoUsuario">
+      <span>
+        {{ usuario_logado }} - {{ "Administrador" if is_admin else "Membro" }}
+      </span>
+      <a href="/logout">Sair</a>
+    </div>
+  {% else %}
+    <div id="infoUsuario">
+      <a href="/login">Entrar</a>
+    </div>
+  {% endif %}
+
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 
   <script>
-    const NASCENTES = JSON.parse('{{ nascentesJSON | escapejs }}');
+    const NASCENTES = JSON.parse({{ nascentesJSON | tojson }});
+
+    const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
 
     const PARA_DE_MINAS = { lat: -19.857, lng: -44.601 };
 
@@ -234,12 +323,23 @@
         ? `<span class="descricao">${escapeHTML(nascente.descricao)}</span>`
         : '';
 
+      const status = nascente.status === "PENDENTE"
+        ? '<span class="status-badge status-pendente">Pendente de aprovação</span>'
+        : nascente.status === "DESAPROVADA"
+          ? '<span class="status-badge status-reprovada">Reprovada</span>'
+          : '';
+
+      const linkEditar = IS_ADMIN
+        ? `<a href="/dashboard/nascentes/${nascente.id}/editar">Editar</a>`
+        : '';
+
       return `
       <div class="popup">
         ${imagem}
+        ${status}
         <strong class="endereco">${escapeHTML(nascente.endereco)}</strong>
         ${descricao}
-          <a href="/dashboard/nascentes/${nascente.id}/editar">Editar</a>
+          ${linkEditar}
           <a href="${googleMapsURL}" target="_blank" rel="noopener noreferrer">
             Abrir no Google Maps
           </a>
@@ -320,8 +420,19 @@
 
     NASCENTES.forEach(function (nascente) {
       const el = document.createElement('div');
-      el.className = 'marcador marcador-nascente';
-      el.title = nascente.endereco;
+
+      let classeMarcador = 'marcador marcador-nascente';
+
+      if (nascente.status === 'PENDENTE') {
+        classeMarcador += ' marcador-nascente-pendente';
+      } else if (nascente.status === 'DESAPROVADA') {
+        classeMarcador += ' marcador-nascente-reprovada';
+      }
+
+      el.className = classeMarcador;
+      el.title = nascente.status === 'PENDENTE'
+        ? `Pendente de aprovação - ${nascente.endereco}`
+        : nascente.endereco;
 
       new maplibregl.Marker({ element: el })
         .setLngLat([nascente.longitude, nascente.latitude])

@@ -1,5 +1,6 @@
 import os
 import json
+from functools import wraps
 from flask import Flask, render_template, request, url_for, redirect, flash, session, abort, send_from_directory, current_app
 
 from extensions import db
@@ -26,14 +27,55 @@ from models.usuario import Usuario
 from models.visitaNascente import VisitaNascente
 from models.documentoNascente import DocumentoNascente
 
+from seed import criarUsuariosPadrao
+
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "super secret key")
 app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///' + os.path.join(basedir, 'database.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+
+def login_obrigatorio(rota):
+    @wraps(rota)
+    def decorada(*args, **kwargs):
+        if not session.get("usuario"):
+            flash("Faça login para acessar esta página.", "error")
+            return redirect("/login")
+
+        return rota(*args, **kwargs)
+
+    return decorada
+
+
+def admin_obrigatorio(rota):
+    @wraps(rota)
+    def decorada(*args, **kwargs):
+        if not session.get("usuario"):
+            flash("Faça login para acessar esta página.", "error")
+            return redirect("/login")
+
+        if session.get("tipoUsuario") != "ADMINISTRADOR":
+            flash("Acesso restrito a administradores.", "error")
+            return redirect("/mapa")
+
+        return rota(*args, **kwargs)
+
+    return decorada
+
+
+@app.context_processor
+def injetar_dados_usuario():
+    return {
+        "usuario_logado": session.get("usuario"),
+        "tipo_usuario": session.get("tipoUsuario"),
+        "is_admin": session.get("tipoUsuario") == "ADMINISTRADOR",
+    }
+
 
 #Rotas de login, logout e cadastro de usuario
 
@@ -134,11 +176,9 @@ def mapa():
     return render_template("mapa.html", nascentesJSON=nascentesJSON)
 
 @app.route("/mapa/registrar", methods=["GET","POST"])
+@login_obrigatorio
 def cadastrarNascente():
 
-    if not session.get("usuario"):
-        return redirect("/login")
-    
     if request.method == "POST":
 
         endereco = request.form["endereco"]
@@ -169,6 +209,7 @@ def cadastrarNascente():
 #Rota de redirecionamento edita ou historico nascente
 
 @app.route("/dashboard/nascentes/<int:id>")
+@admin_obrigatorio
 def detalhesNascente(id):
 
     nascente = buscarNascentePorId(id)
@@ -179,6 +220,7 @@ def detalhesNascente(id):
 #Rotas de Visualização e edição de nascentes
 
 @app.route("/dashboard/nascentes")
+@admin_obrigatorio
 def dashboardNascentes():
 
     nascentesPendentes = listarNascentesPendentes()
@@ -187,6 +229,7 @@ def dashboardNascentes():
     return render_template("dashboardNascentes.html", nascentesPendentes=nascentesPendentes, nascentesAprovadas=nascentesAprovadas)
 
 @app.route("/dashboard/nascentes/<int:id>/editar", methods=["GET", "POST"])
+@admin_obrigatorio
 def editarNascente(id):
 
     nascente = Nascente.query.get(id)
@@ -197,8 +240,16 @@ def editarNascente(id):
 
     if request.method == "POST":
 
+        endereco = request.form["endereco"].strip()
         descricao = request.form["descricao"]
         acao = request.form["acao"]
+
+        try:
+            latitude = float(request.form["latitude"])
+            longitude = float(request.form["longitude"])
+        except (KeyError, ValueError):
+            flash("Latitude e longitude inválidas.", "error")
+            return redirect(f"/dashboard/nascentes/{id}/editar")
 
         imagem = request.files.get("imagem")
 
@@ -223,7 +274,10 @@ def editarNascente(id):
             id,
             nomeImagem,
             descricao,
-            status
+            status,
+            endereco,
+            latitude,
+            longitude
         )
 
 
@@ -246,6 +300,7 @@ def editarNascente(id):
 #Rota de visualização do historico de uma anscente
 
 @app.route("/dashboard/nascentes/<int:id>/historico")
+@admin_obrigatorio
 def historicoNascente(id):
 
     visitas = listarVisitasNascente(id)
@@ -258,6 +313,7 @@ def historicoNascente(id):
 
 #busca os documentos da nascente
 @app.route("/nascentes/<int:nascente_id>/documentos", methods=["GET"])
+@admin_obrigatorio
 def documentosNascente(nascente_id):
     nascente = db.session.get(Nascente, nascente_id)
 
@@ -276,6 +332,7 @@ def documentosNascente(nascente_id):
 
 #rota que exibe o documento
 @app.route("/nascentes/<int:nascente_id>/documentos/<int:documento_id>", methods=["GET"])
+@admin_obrigatorio
 def abrirDocumento(nascente_id, documento_id):
     resultado = buscarDocumentoPorId(documento_id)
 
@@ -297,6 +354,7 @@ def abrirDocumento(nascente_id, documento_id):
 
 #Rota para excluir um documento da nascente
 @app.route("/nascentes/<int:nascente_id>/documentos/<int:documento_id>/excluir", methods=["POST"])
+@admin_obrigatorio
 def removerDocumento(nascente_id,documento_id):
 
     resultado = buscarDocumentoPorId(documento_id)
@@ -332,6 +390,7 @@ def removerDocumento(nascente_id,documento_id):
 
 #adicionar um documento a nascente
 @app.route("/nascentes/<int:nascente_id>/documentos/adicionar", methods=["POST"])
+@admin_obrigatorio
 def adicionarDocumento(nascente_id):
     arquivo = request.files["documentos"]
 
@@ -359,9 +418,8 @@ def adicionarDocumento(nascente_id):
 
 if __name__ == "__main__":
 
-    app.secret_key = "super secret key"
-
     with app.app_context():
         db.create_all()
+        criarUsuariosPadrao()
 
     app.run(debug=True)
