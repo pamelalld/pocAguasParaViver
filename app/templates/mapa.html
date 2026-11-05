@@ -135,7 +135,7 @@
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 
   <script>
-    const NASCENTES = {{ nascentesJSON | safe }};
+    const NASCENTES = JSON.parse('{{ nascentesJSON | escapejs }}');
 
     const PARA_DE_MINAS = { lat: -19.857, lng: -44.601 };
 
