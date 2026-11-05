@@ -42,11 +42,50 @@
     .marcador {
       width: 28px;
       height: 28px;
-      background: #e74c3c;
       border: 2px solid #fff;
       border-radius: 50%;
       box-shadow: 0 2px 6px rgba(0, 0, 0, .4);
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .marcador-usuario {
+      background: #e74c3c;
+    }
+
+    .marcador-usuario::after {
+      content: '';
+      width: 14px;
+      height: 14px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2l8 20-8-5-8 5z'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+
+    .marcador-nascente {
+      background: #1a73e8;
+    }
+
+    .marcador-nascente::after {
+      content: '';
+      width: 14px;
+      height: 14px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C12 2 5 10 5 15a7 7 0 0 0 14 0C19 10 12 2 12 2z'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+
+    .popup-confirmacao button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      background: #1a73e8;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .popup-confirmacao button:hover {
+      background: #1173f2;
     }
 
     .popup {
@@ -136,7 +175,7 @@
 
     function aplicarLocalizacao(lat, lng) {
       const el = document.createElement('div');
-      el.className = 'marcador';
+      el.className = 'marcador marcador-usuario';
       el.title = 'Sua localização';
 
       new maplibregl.Marker({ element: el })
@@ -209,6 +248,7 @@
 
     let modoCadastro = false;
     let marcadorCadastro = null;
+    let popupConfirmacao = null;
 
     const btnCadastrar = document.getElementById("btnCadastrar");
     const mensagemCadastro = document.getElementById("mensagemCadastro");
@@ -237,24 +277,50 @@
           marcadorCadastro.remove();
       }
 
-      marcadorCadastro = new maplibregl.Marker()
+      if (popupConfirmacao) {
+          popupConfirmacao.remove();
+      }
+
+      const elMarcador = document.createElement('div');
+      elMarcador.className = 'marcador marcador-nascente';
+      elMarcador.title = 'Nova nascente';
+
+      marcadorCadastro = new maplibregl.Marker({ element: elMarcador })
           .setLngLat([longitude, latitude])
           .addTo(map);
 
-      mensagemCadastro.textContent =
-          "Localização selecionada. Clique no marcador para cadastrar.";
+      const conteudoPopup = document.createElement('div');
+      conteudoPopup.className = 'popup-confirmacao';
 
-      marcadorCadastro.getElement().addEventListener("click", function () {
+      const botaoConfirmar = document.createElement('button');
+      botaoConfirmar.type = 'button';
+      botaoConfirmar.textContent = 'Confirmar?';
 
+      botaoConfirmar.addEventListener('click', function (event) {
+          event.stopPropagation();
           window.location.href =
               `/mapa/registrar?latitude=${latitude}&longitude=${longitude}`;
-
       });
+
+      conteudoPopup.appendChild(botaoConfirmar);
+
+      popupConfirmacao = new maplibregl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            anchor: 'bottom',
+            offset: [0, -16]
+          })
+          .setLngLat([longitude, latitude])
+          .setDOMContent(conteudoPopup)
+          .addTo(map);
+
+      mensagemCadastro.textContent =
+          "Confirme a localização clicando em \"Confirmar?\" sobre o marcador.";
     });
 
     NASCENTES.forEach(function (nascente) {
       const el = document.createElement('div');
-      el.className = 'marcador';
+      el.className = 'marcador marcador-nascente';
       el.title = nascente.endereco;
 
       new maplibregl.Marker({ element: el })
