@@ -56,7 +56,7 @@ def login():
             session["usuario"] = usuario.nomeUsuario
             session["tipoUsuario"] = usuario.tipoUsuario
 
-            return redirect("/mapa")
+            return redirect("/")
 
         flash("Usuário não encontrado.", "error")
 
@@ -212,10 +212,17 @@ def editarNascente(id):
             imagem.save(os.path.join(app.static_folder, caminhoImagem))
 
 
-        if acao == "validar":
+
+        if acao == "invalidar":
+            db.session.delete(nascente)
+            db.session.commit()
+
+            flash("Nascente excluída com sucesso!", "success")
+            return redirect("/dashboard/nascentes")
+
+        elif acao == "validar":
             status = "APROVADA"
-        elif acao == "invalidar":
-            status = "DESAPROVADA"
+
         else:
             status = nascente.status
 

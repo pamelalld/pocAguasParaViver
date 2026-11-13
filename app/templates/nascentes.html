@@ -1,257 +1,56 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+{% from "_icones.html" import icone %}
 
-<html lang="pt-br">
+{% block titulo %}Início{% endblock %}
 
-<head>
+{% block conteudo %}
+    {% set aprovadas = nascentes | selectattr("status", "equalto", "APROVADA") | list %}
 
-    <meta charset="UTF-8">
+    <section>
+        <h1 class="titulo-pagina">Bem-vindo ao Águas para Viver!</h1>
 
-    <title>Nascentes</title>
+        <p class="texto-justificado">
+            O Águas para Viver é a plataforma da Prefeitura de Pará de Minas para mapear, acompanhar e proteger
+            as nascentes do município. Aqui você encontra as nascentes já validadas, registra novas descobertas
+            e consulta o histórico de visitas e os documentos de cada uma. Explore o mapa e ajude a cuidar da
+            água que dá vida à nossa cidade.
+        </p>
 
-    <style>
-
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        h2 {
-            max-width: 1200px;
-            margin: 30px auto 15px;
-        }
-
-        .nascentes {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
-            margin: 0 auto 40px;
-        }
-
-        .nascente {
-            background-color: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .nascente img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .informacoes {
-            padding: 15px;
-        }
-
-        .informacoes p {
-            margin: 8px 0;
-        }
-
-        .botao-cadastrar {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-
-            padding: 12px 20px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-        }
-
-        .waybar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background-color: white;
-        }
-
-        .logo {
-            font-weight: bold;
-        }
-
-        .usuario {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .usuario a {
-            text-decoration: none;
-        }
-
-    </style>
-
-</head>
-
-
-<body>
-
-
-    <!-- WAYBAR -->
-
-    <nav class="waybar">
-
-        <div class="logo">
-            Águas para Viver
+        <div class="hero-acoes">
+            <a class="btn btn-azul" href="{{ url_for('mapa') }}">
+                {{ icone('mapa') }} Ver mapa
+            </a>
         </div>
-
-        <div class="usuario">
-
-            <a href="/mapa">Voltar para o mapa</a>
-
-            {% if session.get("usuario") %}
-
-                <span>{{ session.get("usuario") }}</span>
-
-                {% if session.get("tipoUsuario") == "ADMINISTRADOR" %}
-                    <a href="/dashboard/nascentes">Dashboard</a>
-                {% endif %}
-
-                <a href="/logout">Sair</a>
-
-            {% else %}
-
-                <a href="/login">Entrar</a>
-
-            {% endif %}
-
-        </div>
-
-    </nav>
-
-
-    <!-- BOTÃO CADASTRAR -->
-
-    <a
-        href="{{ url_for('cadastrarNascente') }}"
-        class="botao-cadastrar"
-    >
-        Cadastrar Nascente
-    </a>
-
-
-    <h1>Nascentes</h1>
-
-
-    <!-- NASCENTES APROVADAS -->
-
-    <h2>Nascentes Aprovadas</h2>
-
-    <div class="nascentes">
-
-        {% set aprovadas = nascentes | selectattr("status", "equalto", "APROVADA") | list %}
 
         {% if aprovadas %}
-
-            {% for nascente in aprovadas %}
-
-                <div class="nascente">
-
-                    <img
-                        src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
-                        alt="Imagem da nascente"
-                    >
-
-                    <div class="informacoes">
-
-                        <p>
-                            <strong>Latitude:</strong>
-                            {{ nascente.latitude }}
-                        </p>
-
-                        <p>
-                            <strong>Longitude:</strong>
-                            {{ nascente.longitude }}
-                        </p>
-
-                        <p>
-                            <strong>Descrição:</strong>
-                            {{ nascente.descricao }}
-                        </p>
-
-                    </div>
-
-                </div>
-
-            {% endfor %}
-
-        {% else %}
-
-            <p>
-                Não existem nascentes aprovadas.
-            </p>
-
+            <div class="carrossel" aria-hidden="true">
+                {% for nascente in aprovadas %}
+                    <img src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}" alt="" loading="lazy" class="{% if loop.first %}ativa{% endif %}">
+                {% endfor %}
+            </div>
         {% endif %}
+    </section>
 
-    </div>
+    <!-- <section>
+        <h2 class="titulo-secao">Nascentes da cidade</h2>
 
-
-    <!-- NASCENTES PENDENTES -->
-    {% if session.get("tipoUsuario") == "ADMINISTRADOR" %}
-    <h2>Nascentes Pendentes</h2>
-
-    <div class="nascentes">
-
-        {% set pendentes = nascentes | selectattr("status", "equalto", "PENDENTE") | list %}
-
-        {% if pendentes %}
-
-            {% for nascente in pendentes %}
-
-                <div class="nascente">
-
-                    <img
-                        src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
-                        alt="Imagem da nascente"
-                    >
-
-                    <div class="informacoes">
-
-                        <p>
-                            <strong>Latitude:</strong>
-                            {{ nascente.latitude }}
-                        </p>
-
-                        <p>
-                            <strong>Longitude:</strong>
-                            {{ nascente.longitude }}
-                        </p>
-
-                        <p>
-                            <strong>Descrição:</strong>
-                            {{ nascente.descricao }}
-                        </p>
-
-                    </div>
-
-                </div>
-
-            {% endfor %}
-
+        {% if aprovadas %}
+            <div class="grade-cartoes">
+                {% for nascente in aprovadas %}
+                    <article class="cartao">
+                        <img src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
+                             alt="Imagem da nascente" loading="lazy">
+                        <div class="cartao-corpo">
+                            <span class="cartao-endereco">{{ nascente.endereco }}</span>
+                            {% if nascente.descricao %}
+                                <p class="cartao-descricao">{{ nascente.descricao }}</p>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
         {% else %}
-
-            <p>
-                Não existem nascentes pendentes.
-            </p>
-
+            <p class="vazio">Ainda não existem nascentes aprovadas.</p>
         {% endif %}
-    {% endif %}
-
-    </div>
-
-
-</body>
-
-</html>
-
+    </section> -->
+{% endblock %}

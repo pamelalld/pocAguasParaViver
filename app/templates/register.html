@@ -1,124 +1,59 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+{% extends "base.html" %}
+{% from "_icones.html" import icone %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Login - Águas para Viver</title>
+{% block titulo %}Cadastro{% endblock %}
+{% block classe_body %}auth{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block avisos %}{% endblock %}
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
-        }
+{% block conteudo %}
+    <div class="painel">
+        <h1>Olá, vai ser um prazer te ter conosco!</h1>
+        <p class="subtitulo">Cadastre-se no sistema Águas para Viver.</p>
 
-        .container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
+        {% include "_avisos.html" %}
 
-        .quadro_branco {
-            background-color: white;
-            width: 400px;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .centered-content {
-            text-align: center;
-        }
-
-        .campo {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-
-        .campo label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .campo input {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-
-        .Botao {
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-    </style>
-</head>
-
-<body>
-
-    <div class="container">
-
-        <div class="quadro_branco">
-
-            <div class="centered-content">
-
-                <h2>Olá! Vai ser um prazer te ter conosco!</h2>
-
-                <p>
-                    Cadastre-se no Sistema Águas Para Viver.
-                </p>
-                {% with mensagens = get_flashed_messages(with_categories=true) %}
-                    {% if mensagens %}
-                        {% for categoria, mensagem in mensagens %}
-                            <p, color="red">{{ mensagem }}</p>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                <form action="/register" method="POST">
-                    <div class="campo">
-                        <label for="nomeUsuario">Nome</label>
-                        <input
-                            id="nomeUsuario"
-                            name="nomeUsuario"
-                            type="text"
-                            required>
-                    </div>
-
-                    <div class="campo">
-                        <label for="email">E-mail</label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            required>
-                    </div>
-
-                    <div class="campo">
-                        <label for="senha">Senha</label>
-                        <input
-                            id="senha"
-                            name="senha"
-                            type="password"
-                            required>
-                    </div>
-
-                    <button type="submit">
-                        Cadastrar
-                    </button>
-                    <p>Já tem uma conta?
-                        <a href="{{ url_for('login') }}">Ir para o login</a>
-                    </p>
-                </form>
-
+        <form action="{{ url_for('register') }}" method="POST">
+            <div class="campo">
+                <label for="nomeUsuario">Nome</label>
+                <input class="entrada" id="nomeUsuario" name="nomeUsuario" type="text" autocomplete="name" required>
             </div>
 
-        </div>
+            <div class="campo">
+                <label for="email">Email</label>
+                <input class="entrada" id="email" name="email" type="email" autocomplete="email" required>
+            </div>
 
+            <div class="campo">
+                <label for="senha">Senha</label>
+                <div class="senha">
+                    <input class="entrada" id="senha" name="senha" type="password" autocomplete="new-password" required>
+                    <button type="button" data-alternar-senha="senha" aria-label="Mostrar senha" aria-pressed="false">
+                        <span data-icone="ocultar">{{ icone('ocultar') }}</span>
+                        <span data-icone="ver" hidden>{{ icone('ver') }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="campo">
+                <label for="confirmarSenha">Confirmar senha</label>
+                <div class="senha">
+                    <input class="entrada" id="confirmarSenha" type="password" autocomplete="new-password" required>
+                    <button type="button" data-alternar-senha="confirmarSenha" aria-label="Mostrar senha" aria-pressed="false">
+                        <span data-icone="ocultar">{{ icone('ocultar') }}</span>
+                        <span data-icone="ver" hidden>{{ icone('ver') }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="acoes">
+                <button type="submit" class="btn btn-azul">Cadastrar</button>
+            </div>
+        </form>
+
+        <p class="link-centro">
+            Já tem uma conta? <a href="{{ url_for('login') }}">Ir para login</a>
+        </p>
     </div>
-
-</body>
-
-</html>
+{% endblock %}
