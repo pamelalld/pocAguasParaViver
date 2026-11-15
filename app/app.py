@@ -28,9 +28,17 @@ from models.documentoNascente import DocumentoNascente
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+project_root = os.path.dirname(basedir)
+
+database_path = os.path.join(project_root, 'database', 'database.db')
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///' + os.path.join(basedir, 'database.db'))
+app.secret_key = os.environ.get("SECRET_KEY")
+
+if not app.secret_key:
+    raise RuntimeError("SECRET_KEY não configurada.")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + database_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -359,9 +367,7 @@ def adicionarDocumento(nascente_id):
 
 if __name__ == "__main__":
 
-    app.secret_key = "super secret key"
-
     with app.app_context():
         db.create_all()
 
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
