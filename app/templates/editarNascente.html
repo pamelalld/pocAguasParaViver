@@ -92,18 +92,25 @@ h1 {
 
 /* CAMPOS EDITÁVEIS */
 
-textarea {
+textarea,
+input[type="text"],
+input[type="number"] {
     width: 100%;
-    min-height: 120px;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
     font-family: Arial, sans-serif;
     font-size: 15px;
+}
+
+textarea {
+    min-height: 120px;
     resize: vertical;
 }
 
-textarea:focus {
+textarea:focus,
+input[type="text"]:focus,
+input[type="number"]:focus {
     outline: none;
     border-color: #555;
 }
@@ -210,38 +217,56 @@ input[type="file"] {
 
             <div class="campo">
 
-                <label>
+                <label for="endereco">
                     Endereço
                 </label>
 
-                <p>
-                    {{ nascente.endereco }}
-                </p>
+                <input
+                    type="text"
+                    id="endereco"
+                    name="endereco"
+                    value="{{ nascente.endereco }}"
+                    required
+                >
 
             </div>
 
 
             <div class="campo">
 
-                <label>
+                <label for="latitude">
                     Latitude
                 </label>
 
-                <p>
-                    {{ nascente.latitude }}
-                </p>
+                <input
+                    type="number"
+                    id="latitude"
+                    name="latitude"
+                    step="any"
+                    value="{{ nascente.latitude }}"
+                    required
+                >
 
             </div>
 
 
             <div class="campo">
 
-                <label>
+                <label for="longitude">
                     Longitude
                 </label>
 
-                <p>
-                    {{ nascente.longitude }}
+                <input
+                    type="number"
+                    id="longitude"
+                    name="longitude"
+                    step="any"
+                    value="{{ nascente.longitude }}"
+                    required
+                >
+
+                <p class="ajuda">
+                    Altere a latitude e a longitude para reposicionar o marcador no mapa.
                 </p>
 
             </div>
