@@ -1,0 +1,15 @@
+services:
+  aguas-app:
+    build: .
+    container_name: aguas-app
+    ports:
+      - "5000:5000"
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./database:/app/database
+      - ./app/static/uploads:/app/app/static/uploads
+
+    restart: unless-stopped

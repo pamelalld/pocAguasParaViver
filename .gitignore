@@ -1,0 +1,43 @@
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Variáveis de ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# Banco de dados SQLite
+database/*.db
+database/*.db-journal
+database/*.db-wal
+database/*.db-shm
+
+# Backups
+*.bak
+*.backup
+
+# Uploads dos usuários
+app/static/uploads/*
+
+# Mantém a estrutura das pastas
+!app/static/uploads/.gitkeep
+!app/static/uploads/documentos/
+!app/static/uploads/documentos/.gitkeep
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini

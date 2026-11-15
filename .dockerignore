@@ -1,0 +1,36 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Banco de dados
+database/*.db
+database/*.db-journal
+database/*.db-wal
+database/*.db-shm
+
+# Backups
+*.bak
+*.backup
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
