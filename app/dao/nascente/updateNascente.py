@@ -1,7 +1,7 @@
 from extensions import db
 from models.nascente import Nascente
 
-def atualizarNascente(id, imagem=None, descricao=None, status=None):
+def atualizarNascente(id, imagem=None, descricao=None, status=None, endereco=None, latitude=None, longitude=None):
     try:
         nascente = Nascente.query.get(id)
 
@@ -16,6 +16,15 @@ def atualizarNascente(id, imagem=None, descricao=None, status=None):
 
         if status is not None:
             nascente.status = status
+
+        if endereco is not None:
+            nascente.endereco = endereco
+
+        if latitude is not None:
+            nascente.latitude = latitude
+
+        if longitude is not None:
+            nascente.longitude = longitude
 
         db.session.commit()
 
