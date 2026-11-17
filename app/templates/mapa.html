@@ -64,19 +64,7 @@
 
         const map = new maplibregl.Map({
             container: 'mapa',
-            style: {
-                version: 8,
-                sources: {
-                    satelite: {
-                        type: 'raster',
-                        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-                        tileSize: 256,
-                        maxzoom: 17,
-                        attribution: 'Imagens © Esri, Maxar, Earthstar Geographics'
-                    }
-                },
-                layers: [{ id: 'satelite', type: 'raster', source: 'satelite' }]
-            },
+            style: 'https://tiles.openfreemap.org/styles/bright',
             center: [PARA_DE_MINAS.lng, PARA_DE_MINAS.lat],
             zoom: 13,
             // maxBounds: MAX_BOUNDS,
