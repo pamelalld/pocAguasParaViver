@@ -1,379 +1,88 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
+{% from "_icones.html" import icone %}
 
-<html lang="pt-BR">
+{% block titulo %}{{ 'Validar' if nascente.status == 'PENDENTE' else 'Editar' }} nascente{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
+{% block conteudo %}
+    <div class="painel painel-largo">
+        <a class="btn-voltar" href="{{ url_for('dashboardNascentes') }}" title="Voltar ao painel" aria-label="Voltar ao painel">
+            {{ icone('voltar') }}
+        </a>
 
-    <title>Editar Nascente</title>
+        <h1>{{ 'Validar' if nascente.status == 'PENDENTE' else 'Editar' }} Nascente</h1>
 
-    <style>
+        <dialog id="confirmarExclusao" class="modal-confirmacao">
+            <h2>Excluir nascente?</h2>
+            <p>
+                Tem certeza que deseja excluir esta nascente?
+                Essa ação não poderá ser desfeita.
+            </p>
 
-* {
-    box-sizing: border-box;
-}
+            <div class="acoes-modal">
+                <button type="button" id="cancelarExclusao">
+                    Cancelar
+                </button>
 
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 30px;
-    background-color: #f5f5f5;
-}
-
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    background-color: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    margin-top: 0;
-    margin-bottom: 30px;
-}
-
-
-/* IMAGEM ATUAL */
-
-.imagem-atual {
-    margin-bottom: 30px;
-}
-
-.imagem-atual p {
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.imagem-atual img {
-    width: 100%;
-    max-height: 350px;
-    object-fit: cover;
-    border-radius: 8px;
-}
-
-
-/* INFORMAÇÕES DA NASCENTE */
-
-.informacoes {
-    margin-bottom: 25px;
-    padding: 15px;
-    background-color: #f5f5f5;
-    border-radius: 8px;
-}
-
-.campo {
-    margin-bottom: 20px;
-}
-
-.informacoes .campo {
-    margin-bottom: 15px;
-}
-
-.informacoes .campo:last-child {
-    margin-bottom: 0;
-}
-
-.campo label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-.informacoes p {
-    margin: 0;
-    padding: 10px;
-    background-color: white;
-    border-radius: 5px;
-    color: #444;
-}
-
-
-/* CAMPOS EDITÁVEIS */
-
-textarea,
-input[type="text"],
-input[type="number"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-    font-size: 15px;
-}
-
-textarea {
-    min-height: 120px;
-    resize: vertical;
-}
-
-textarea:focus,
-input[type="text"]:focus,
-input[type="number"]:focus {
-    outline: none;
-    border-color: #555;
-}
-
-
-/* IMAGEM */
-
-input[type="file"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: white;
-    font-size: 14px;
-}
-
-.ajuda {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #666;
-}
-
-
-/* BOTÕES */
-
-.botoes {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-    margin-top: 30px;
-}
-
-.botao {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    text-decoration: none;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-.voltar {
-    margin-right: auto;
-    background-color: #ddd;
-    color: #222;
-}
-
-.salvar {
-    background-color: #333;
-    color: white;
-}
-
-.validar {
-    background-color: #333;
-    color: white;
-}
-
-.invalidar {
-    background-color: #ddd;
-    color: #222;
-}
-
-.botao:hover {
-    opacity: 0.85;
-}
-
-    </style>
-
-</head>
-
-<body>
-
-<div class="container">
-
-    <h1>Editar Nascente</h1>
-
-    <!-- IMAGEM ATUAL -->
-
-    <div class="imagem-atual">
-
-        <p>Imagem atual:</p>
-
-        <img
-            src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
-            alt="Imagem da nascente"
-        >
-
-    </div>
-
-
-    <!-- FORMULÁRIO -->
-
-
-    <form
-        action="{{ url_for('editarNascente', id=nascente.id) }}"
-        method="POST"
-        enctype="multipart/form-data"
-    >
-
-        <!-- INFORMAÇÕES DA NASCENTE -->
-
-        <div class="informacoes">
-
-            <div class="campo">
-
-                <label for="endereco">
-                    Endereço
-                </label>
-
-                <input
-                    type="text"
-                    id="endereco"
-                    name="endereco"
-                    value="{{ nascente.endereco }}"
-                    required
-                >
-
+                <button type="button" id="confirmarExclusaoBtn">
+                    Sim, excluir
+                </button>
             </div>
+        </dialog>
 
+        <form action="{{ url_for('editarNascente', id=nascente.id) }}" method="POST" enctype="multipart/form-data">
 
-            <div class="campo">
+            <div class="linha-imagem">
+                <img id="imagemAtual" src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}" alt="Imagem da nascente">
 
-                <label for="latitude">
-                    Latitude
+                <label for="imagem" class="btn-icone" title="Trocar imagem">
+                    {{ icone('lapis') }}
+                    <span class="oculto">Trocar imagem</span>
                 </label>
-
-                <input
-                    type="number"
-                    id="latitude"
-                    name="latitude"
-                    step="any"
-                    value="{{ nascente.latitude }}"
-                    required
-                >
-
+                <input class="oculto" type="file" id="imagem" name="imagem" accept="image/*" data-previa="imagemAtual">
             </div>
-
-
-            <div class="campo">
-
-                <label for="longitude">
-                    Longitude
-                </label>
-
-                <input
-                    type="number"
-                    id="longitude"
-                    name="longitude"
-                    step="any"
-                    value="{{ nascente.longitude }}"
-                    required
-                >
-
-                <p class="ajuda">
-                    Altere a latitude e a longitude para reposicionar o marcador no mapa.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <!-- DESCRIÇÃO -->
-
-        <div class="campo">
-
-            <label for="descricao">
-                Descrição
-            </label>
-
-            <textarea
-                id="descricao"
-                name="descricao"
-            >{{ nascente.descricao }}</textarea>
-
-        </div>
-
-
-        <!-- IMAGEM -->
-
-        <div class="campo">
-
-            <label for="imagem">
-                Nova imagem
-            </label>
-
-            <input
-                type="file"
-                id="imagem"
-                name="imagem"
-                accept="image/*"
-            >
-
-            <p class="ajuda">
+            <p class="ajuda" style="margin-top:-8px; margin-bottom:16px;">
                 Caso nenhuma imagem seja selecionada, a imagem atual será mantida.
             </p>
 
-        </div>
+            <dl class="info-grid">
+                <div class="largo">
+                    <dt>Endereço</dt>
+                    <dd>{{ nascente.endereco }}</dd>
+                </div>
+                <div>
+                    <dt>Latitude</dt>
+                    <dd>{{ nascente.latitude }}</dd>
+                </div>
+                <div>
+                    <dt>Longitude</dt>
+                    <dd>{{ nascente.longitude }}</dd>
+                </div>
+            </dl>
 
+            <div class="campo">
+                <label for="descricao">Descrição</label>
+                <div class="linha-edicao">
+                    <textarea class="entrada" id="descricao" name="descricao" data-somente-leitura>{{ nascente.descricao }}</textarea>
+                    <button type="button" class="btn-icone" data-liberar="descricao" title="Editar descrição" aria-label="Editar descrição">
+                        {{ icone('lapis') }}
+                    </button>
+                </div>
+            </div>
 
-        <!-- BOTÕES -->
+            <div class="campo">
+                <span class="rotulo">Status</span>
+                <span class="selo selo-{{ nascente.status | lower }}">{{ nascente.status | capitalize }}</span>
+            </div>
 
-        <div class="botoes">
-
-            <a
-                href="{{ url_for('dashboardNascentes') }}"
-                class="botao voltar"
-            >
-                Voltar
-            </a>
-
-
-            {% if nascente.status == "PENDENTE" %}
-
-                <button
-                    type="submit"
-                    name="acao"
-                    value="validar"
-                    class="botao validar"
-                >
-                    Validar
-                </button>
-
-                <button
-                    type="submit"
-                    name="acao"
-                    value="invalidar"
-                    class="botao invalidar"
-                >
-                    Invalidar
-                </button>
-
-
-            {% elif nascente.status == "APROVADA" %}
-
-                <button
-                    type="submit"
-                    name="acao"
-                    value="salvar"
-                    class="botao salvar"
-                >
-                    Salvar mudanças
-                </button>
-
-                <button
-                    type="submit"
-                    name="acao"
-                    value="invalidar"
-                    class="botao invalidar"
-                >
-                    Invalidar nascente
-                </button>
-
-            {% endif %}
-
-        </div>
-
-    </form>
-
-
-</div>
-
-</body>
-
-</html>
+            <div class="acoes">
+                {% if nascente.status == "PENDENTE" %}
+                    <button type="submit" name="acao" value="validar" class="btn btn-verde">Validar</button>
+                    <button type="submit" name="acao" value="invalidar" class="btn btn-vermelho">Invalidar</button>
+                {% elif nascente.status == "APROVADA" %}
+                    <button type="submit" name="acao" value="salvar" class="btn btn-verde">Salvar</button>
+                    <button type="submit" name="acao" value="invalidar" class="btn btn-vermelho" id="botaoInvalidar"> Invalidar nascente</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+{% endblock %}

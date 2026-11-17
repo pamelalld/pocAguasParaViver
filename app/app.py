@@ -98,7 +98,7 @@ def login():
             session["usuario"] = usuario.nomeUsuario
             session["tipoUsuario"] = usuario.tipoUsuario
 
-            return redirect("/mapa")
+            return redirect("/")
 
         flash("Usuário não encontrado.", "error")
 
@@ -240,14 +240,15 @@ def editarNascente(id):
 
     if request.method == "POST":
 
-        endereco = request.form["endereco"].strip()
         descricao = request.form["descricao"]
         acao = request.form["acao"]
 
+        endereco = request.form.get("endereco", nascente.endereco).strip()
+
         try:
-            latitude = float(request.form["latitude"])
-            longitude = float(request.form["longitude"])
-        except (KeyError, ValueError):
+            latitude = float(request.form.get("latitude", nascente.latitude))
+            longitude = float(request.form.get("longitude", nascente.longitude))
+        except (TypeError, ValueError):
             flash("Latitude e longitude inválidas.", "error")
             return redirect(f"/dashboard/nascentes/{id}/editar")
 
@@ -263,10 +264,17 @@ def editarNascente(id):
             imagem.save(os.path.join(app.static_folder, caminhoImagem))
 
 
-        if acao == "validar":
+
+        if acao == "invalidar":
+            db.session.delete(nascente)
+            db.session.commit()
+
+            flash("Nascente excluída com sucesso!", "success")
+            return redirect("/dashboard/nascentes")
+
+        elif acao == "validar":
             status = "APROVADA"
-        elif acao == "invalidar":
-            status = "DESAPROVADA"
+
         else:
             status = nascente.status
 

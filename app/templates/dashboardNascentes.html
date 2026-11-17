@@ -1,209 +1,48 @@
-<!DOCTYPE html>
-
-<html lang="pt-BR">
-
-<head>
-    <meta charset="UTF-8">
-
-<title>Dashboard - Nascentes</title>
-
-<style>
-
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 30px;
-        background-color: #f5f5f5;
-    }
-
-    h1 {
-        margin-bottom: 30px;
-    }
-
-    h2 {
-        margin-top: 30px;
-        margin-bottom: 15px;
-    }
-
-    .nascentes {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-    }
-
-    .nascente {
-        display: flex;
-        flex-direction: column;
-        background-color: white;
-        border-radius: 10px;
-        overflow: hidden;
-        text-decoration: none;
-        color: inherit;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .nascente:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-    }
-
-    .nascente img {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-    }
-
-    .informacoes {
-        padding: 15px;
-    }
-
-    .informacoes p {
-        margin: 8px 0;
-    }
-
-    .status {
-        font-weight: bold;
-    }
-
-    .waybar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px 30px;
-        background-color: white;
-    }
-
-        .logo {
-            font-weight: bold;
-        }
-
-</style>
-
-</head>
-
-<body>
-
-<nav class="waybar">
-    <div class="logo">
-        <a href="/">Águas para Viver</a>
-    </div>
-
-    <div class="navegacao">
-        <a href="/logout">Sair</a>
-    </div>
-</nav>
-
-
-
-<h1>Dashboard de Nascentes</h1>
-
-
-<!-- NASCENTES PENDENTES -->
-
-<h2>Pendentes</h2>
-
-<div class="nascentes">
-
-    {% if nascentesPendentes %}
-
-        {% for nascente in nascentesPendentes %}
-
-            <a
-                href="{{ url_for('editarNascente', id=nascente.id) }}"
-                class="nascente"
-            >
-
-                <img
-                    src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
-                >
-
-                <div class="informacoes">
-
-                    <p>
-                        <strong>Endereço:</strong>
-                        {{ nascente.endereco }}
-                    </p>
-
-                    <p>
-                        <strong>Descrição:</strong>
-                        {{ nascente.descricao }}
-                    </p>
-
-                    <p>
-                        <strong>Status:</strong>
-                        <span class="status">
-                            {{ nascente.status }}
-                        </span>
-                    </p>
-
-                </div>
-
-            </a>
-
-        {% endfor %}
-
-    {% else %}
-
-        <p>Não existem nascentes pendentes.</p>
-
-    {% endif %}
-
-</div>
-
-
-<!-- NASCENTES APROVADAS -->
-
-<h2>Aprovadas</h2>
-
-<div class="nascentes">
-
-    {% if nascentesAprovadas %}
-
-        {% for nascente in nascentesAprovadas %}
-
-            <a
-                href="{{ url_for('detalhesNascente', id=nascente.id) }}"
-                class="nascente"
-            >
-
-                <img
-                    src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}"
-                >
-
-                <div class="informacoes">
-
-                    <p>
-                        <strong>Endereço:</strong>
-                        {{ nascente.endereco }}
-                    </p>
-
-                    <p>
-                        <strong>Descrição:</strong>
-                        {{ nascente.descricao }}
-                    </p>
-
-                    <p>
-                        <strong>Status:</strong>
-                        <span class="status">
-                            {{ nascente.status }}
-                        </span>
-                    </p>
-
-                </div>
-
-            </a>
-
-        {% endfor %}
-
-    {% else %}
-
-        <p>Não existem nascentes aprovadas.</p>
-
-    {% endif %}
-
-</div>
-
-</body>
-
-</html>
+{% extends "base.html" %}
+
+{% block titulo %}Painel de nascentes{% endblock %}
+
+{% macro cartao(nascente, destino) %}
+    <a href="{{ destino }}" class="cartao">
+        <img src="{{ url_for('static', filename='uploads/' + nascente.imagem) }}" alt="Imagem da nascente" loading="lazy">
+        <div class="cartao-corpo">
+            <span class="cartao-endereco">{{ nascente.endereco }}</span>
+            {% if nascente.descricao %}
+                <p class="cartao-descricao">{{ nascente.descricao }}</p>
+            {% endif %}
+            <span class="selo selo-{{ nascente.status | lower }}">{{ nascente.status | capitalize }}</span>
+        </div>
+    </a>
+{% endmacro %}
+
+{% block conteudo %}
+    <h1 class="titulo-pagina">Painel de nascentes</h1>
+
+    <section>
+        <h2 class="titulo-secao">Nascentes pendentes</h2>
+
+        {% if nascentesPendentes %}
+            <div class="grade-cartoes">
+                {% for nascente in nascentesPendentes %}
+                    {{ cartao(nascente, url_for('editarNascente', id=nascente.id)) }}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="vazio">Não existem nascentes pendentes.</p>
+        {% endif %}
+    </section>
+
+    <section>
+        <h2 class="titulo-secao">Nascentes aceitas</h2>
+
+        {% if nascentesAprovadas %}
+            <div class="grade-cartoes">
+                {% for nascente in nascentesAprovadas %}
+                    {{ cartao(nascente, url_for('detalhesNascente', id=nascente.id)) }}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="vazio">Não existem nascentes aprovadas.</p>
+        {% endif %}
+    </section>
+{% endblock %}
