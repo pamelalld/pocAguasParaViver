@@ -369,6 +369,11 @@ dialog.modal::backdrop { background: rgba(0, 20, 60, .55); }
   .mapa-info { right: 12px; }
   .mapa-aviso { top: 126px; left: 12px; }
   .legenda { top: 130px; right: 12px; }
+  .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 10px 0 22px; }
+  .chip {
+    display: flex; align-items: center; gap: 10px; padding: 10px 6px; cursor: pointer;
+    border: 1.5px solid var(--borda); border-radius: 10px; background: var(--card);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
