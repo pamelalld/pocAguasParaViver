@@ -45,10 +45,22 @@ app.config.update(
 
     PERMANENT_SESSION_LIFETIME=1800
 )
-app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///' + os.path.join(basedir, 'database.db'))
+
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    f"mysql+pymysql://{os.environ['MYSQL_USER']}:{os.environ['MYSQL_PASSWORD']}"
+    f"@{os.environ.get('MYSQL_HOST', 'db')}:3306/{os.environ['MYSQL_DATABASE']}?charset=utf8mb4"
+)
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 280,
+}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+    criarUsuariosPadrao()
 
 def login_obrigatorio(rota):
     @wraps(rota)
@@ -447,9 +459,5 @@ def adicionarDocumento(nascente_id):
 
 
 if __name__ == "__main__":
-
-    with app.app_context():
-        db.create_all()
-        criarUsuariosPadrao()
 
     app.run(debug=True)
