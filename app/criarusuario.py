@@ -2,15 +2,34 @@ from app import app
 from extensions import db
 from models.usuario import Usuario
 
-with app.app_context():
-    usuario = Usuario(
-        "Admin Teste",
-        "1234",
-        "admin@teste.com",
-        "ADMINISTRADOR"
-    )
+from werkzeug.security import generate_password_hash
 
-    db.session.add(usuario)
+with app.app_context():
+
+    email = "admin@teste.com"
+    senha_hash = generate_password_hash("1234")
+
+    usuario = Usuario.query.filter_by(email=email).first()
+
+    if usuario:
+        usuario.nomeUsuario = "Admin Teste"
+        usuario.senha = senha_hash
+        usuario.tipoUsuario = "ADMINISTRADOR"
+
+        print("Administrador atualizado!")
+
+    else:
+        usuario = Usuario(
+            "Admin Teste",
+            senha_hash,
+            email,
+            "ADMINISTRADOR"
+        )
+
+        db.session.add(usuario)
+
+        print("Administrador criado!")
+
     db.session.commit()
 
     print("bao")

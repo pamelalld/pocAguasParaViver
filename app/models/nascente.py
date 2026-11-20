@@ -1,4 +1,4 @@
-from extensions import db
+from extensions import db, data_atual
 
 class Nascente(db.Model):
     __tablename__ = "nascente"
@@ -7,7 +7,13 @@ class Nascente(db.Model):
     endereco = db.Column(db.String(255), nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
-    dataRegistro = db.Column(db.DateTime, nullable=False, default=db.func.now())
+
+    dataRegistro = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=data_atual
+    )
+
     imagem = db.Column(db.String(255), nullable=False)
     # dataAlteracao = db.Column(db.DateTime, nullable=True, onupdate=db.func.now())
     descricao = db.Column(db.Text, nullable=True)

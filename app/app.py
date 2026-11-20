@@ -3,11 +3,13 @@ import json
 from functools import wraps
 from flask import Flask, render_template, request, url_for, redirect, flash, session, abort, send_from_directory, current_app
 
+from dotenv import load_dotenv
 from extensions import db
 from sqlalchemy.sql import func
 
 import logging as log
 from werkzeug.utils import secure_filename, safe_join
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from dao.nascente.createNascente import inserirNascente
 from dao.nascente.updateNascente import atualizarNascente
@@ -29,16 +31,24 @@ from models.documentoNascente import DocumentoNascente
 
 from seed import criarUsuariosPadrao
 
-
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "super secret key")
+
+app.config.update(
+    SECRET_KEY=os.environ.get("SECRET_KEY"),
+
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+
+    PERMANENT_SESSION_LIFETIME=1800
+)
 app.config['SQLALCHEMY_DATABASE_URI'] = ('sqlite:///' + os.path.join(basedir, 'database.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-
 
 def login_obrigatorio(rota):
     @wraps(rota)
@@ -84,7 +94,7 @@ def login():
 
     if request.method == "POST":
 
-        email = request.form["email"]
+        email = request.form["email"].strip().lower()
         senha = request.form["password"]
         tipoUsuario = request.form["tipoUsuario"]
 
@@ -93,7 +103,9 @@ def login():
             tipoUsuario=tipoUsuario
         ).first()
 
-        if usuario and usuario.senha == senha:
+        if usuario and check_password_hash(usuario.senha, senha):
+
+            session.clear()
 
             session["usuario"] = usuario.nomeUsuario
             session["tipoUsuario"] = usuario.tipoUsuario
@@ -114,9 +126,17 @@ def register():
 
     if request.method == "POST":
 
-        nomeUsuario = request.form["nomeUsuario"]
-        email = request.form["email"]
+        nomeUsuario = request.form["nomeUsuario"].strip()
+        email = request.form["email"].strip().lower()
         senha = request.form["senha"]
+
+        if not nomeUsuario or not email or not senha:
+            flash("Preencha todos os campos.", "error")
+            return redirect("/register")
+
+        if len(senha) < 8:
+            flash("A senha deve ter pelo menos 8 caracteres.", "error")
+            return redirect("/register")
 
         usuarioExistente = Usuario.query.filter_by(email=email).first()
 
@@ -124,7 +144,9 @@ def register():
             flash("E-mail já cadastrado.", "error")
             return redirect("/register")
 
-        usuario = Usuario(nomeUsuario=nomeUsuario, senha=senha, email=email, tipoUsuario="MEMBRO")
+        senhaHash = generate_password_hash(senha)
+
+        usuario = Usuario(nomeUsuario=nomeUsuario, senha=senhaHash, email=email, tipoUsuario="MEMBRO")
 
         resultado = inserirUsuario(usuario)
 
