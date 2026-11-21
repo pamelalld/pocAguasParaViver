@@ -1,5 +1,6 @@
 from extensions import db
 from models.usuario import Usuario
+from werkzeug.security import generate_password_hash
 
 
 USUARIOS_PADRAO = (
@@ -20,20 +21,31 @@ USUARIOS_PADRAO = (
 
 def criarUsuariosPadrao():
     criados = []
+    atualizados = []
+
 
     for dados in USUARIOS_PADRAO:
-        if Usuario.query.filter_by(email=dados["email"]).first():
-            continue
+        usuario = Usuario.query.filter_by(email=dados["email"]).first()
 
-        usuario = Usuario(
-            dados["nomeUsuario"],
-            dados["senha"],
-            dados["email"],
-            dados["tipoUsuario"],
-        )
+        senhaHash = generate_password_hash(dados["senha"])
 
-        db.session.add(usuario)
-        criados.append(dados["email"])
+        if usuario:
+            usuario.nomeUsuario = dados["nomeUsuario"]
+            usuario.senha = senhaHash
+            usuario.tipoUsuario = dados["tipoUsuario"]
+
+            atualizados.append(dados["email"])
+
+        else:
+            usuario = Usuario(
+                dados["nomeUsuario"],
+                senhaHash,
+                dados["email"],
+                dados["tipoUsuario"],
+            )
+
+            db.session.add(usuario)
+            criados.append(dados["email"])
 
     try:
         db.session.commit()
@@ -41,7 +53,7 @@ def criarUsuariosPadrao():
         db.session.rollback()
         raise
 
-    return criados
+    return criados, atualizados
 
 
 if __name__ == "__main__":
