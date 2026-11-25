@@ -1,4 +1,4 @@
-from extensions import db
+from extensions import db, data_atual
 
 class VisitaNascente(db.Model):
     __tablename__ = "visitaNascente"
@@ -7,7 +7,11 @@ class VisitaNascente(db.Model):
 
     idNascente = db.Column(db.Integer,db.ForeignKey("nascente.id"),nullable=False)
 
-    dataVisita = db.Column(db.DateTime,nullable=False,default=db.func.now())
+    dataVisita = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=data_atual
+    )
 
     imagem = db.Column(db.String(255), nullable=False)
     descricao = db.Column(db.Text)
