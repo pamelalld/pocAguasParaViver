@@ -1,93 +1,71 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Cadastrar Nascente</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 30px;
+{% extends "base.html" %}
+
+{% block titulo %}Cadastrar nascente{% endblock %}
+
+{% block conteudo %}
+    <div class="painel">
+        <h1>Cadastrar Nascente</h1>
+
+        <form action="{{ url_for('cadastrarNascente') }}" method="POST" enctype="multipart/form-data">
+            <div class="campo">
+                <label for="endereco">Endereço</label>
+                <input class="entrada" type="text" id="endereco" name="endereco" required>
+            </div>
+
+            <input type="hidden" id="latitude" name="latitude">
+            <input type="hidden" id="longitude" name="longitude">
+
+            <div class="campo">
+                <label for="imagem">Imagem</label>
+                <input class="entrada" type="file" id="imagem" name="imagem" accept="image/*" required>
+            </div>
+
+            <div class="campo">
+                <label for="descricao">Descrição</label>
+                <textarea class="entrada" id="descricao" name="descricao"></textarea>
+            </div>
+
+            <div class="acoes">
+                <button type="submit" class="btn btn-verde">Cadastrar</button>
+                <button type="button" class="btn btn-vermelho" onclick="history.back()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const parametros = new URLSearchParams(window.location.search);
+        const latitude = parametros.get("latitude");
+        const longitude = parametros.get("longitude");
+
+        document.getElementById("latitude").value = latitude;
+        document.getElementById("longitude").value = longitude;
+
+        const campoEndereco = document.getElementById("endereco");
+
+        async function preencherEnderecoAutomaticamente(lat, lng) {
+            if (!lat || !lng) return;
+
+            campoEndereco.placeholder = "Buscando endereço...";
+            campoEndereco.disabled = true;
+
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&accept-language=pt-BR`;
+                const resposta = await fetch(url);
+                if (!resposta.ok) throw new Error("Falha na busca do endereço");
+
+                const dados = await resposta.json();
+                if (dados && dados.display_name) {
+                    campoEndereco.value = dados.display_name;
+                }
+            } catch (e) {
+                campoEndereco.placeholder = "Não foi possível buscar o endereço. Digite manualmente.";
+            } finally {
+                campoEndereco.disabled = false;
+            }
         }
 
-        .formulario {
-            max-width: 600px;
-            margin: auto;
-            background-color: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            text-align: center;
-        }
-
-        label {
-            display: block;
-            margin-top: 15px;
-            margin-bottom: 5px;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        textarea {
-            height: 120px;
-            resize: vertical;
-        }
-
-        button {
-            width: 100%;
-            margin-top: 20px;
-            padding: 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-    </style>
-</head>
-<body>
-
-<div class="formulario">
-    <h1>Cadastrar Nascente</h1>
-
-    <form action="/mapa/registrar" method="POST" enctype="multipart/form-data">
-
-        <label for="endereco">Endereço</label>
-        <input type="text" id="endereco" name="endereco" required>
-
-        <input type="hidden" id="latitude" name="latitude">
-        <input type="hidden" id="longitude" name="longitude">
-
-        <label for="imagem">Imagem</label>
-        <input type="file" id="imagem" name="imagem" accept="image/*" required>
-
-        <label for="descricao">Descrição</label>
-        <textarea id="descricao" name="descricao"></textarea>
-
-        <button type="submit">Cadastrar nascente</button>
-        <button type="button" onclick="history.back()">Cancelar</button>
-
-    </form>
-</div>
-
-<script>
-    const parametros = new URLSearchParams(window.location.search);
-
-    const latitude = parametros.get("latitude");
-    const longitude = parametros.get("longitude");
-
-    document.getElementById("latitude").value = latitude;
-    document.getElementById("longitude").value = longitude;
-</script>
-
-</body>
-</html>
+        preencherEnderecoAutomaticamente(latitude, longitude);
+    </script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_icones.html" import icone %}
+
+{% block titulo %}Documentos da nascente{% endblock %}
+
+{% block conteudo %}
+    <div class="painel painel-largo">
+        <a class="btn-voltar" href="{{ url_for('detalhesNascente', id=nascente.id) }}" title="Voltar" aria-label="Voltar para a nascente">
+            {{ icone('voltar') }}
+        </a>
+
+        <h1>Documentos da Nascente</h1>
+
+        <div class="resumo-nascente">
+            <dl class="info-grid">
+                <div>
+                    <dt>Endereço</dt>
+                    <dd>{{ nascente.endereco }}</dd>
+                </div>
+                <div>
+                    <dt>Status atual</dt>
+                    <dd><span class="selo selo-{{ nascente.status | lower }}">{{ nascente.status | capitalize }}</span></dd>
+                </div>
+                <div>
+                    <dt>Latitude</dt>
+                    <dd>{{ nascente.latitude }}</dd>
+                </div>
+                <div>
+                    <dt>Longitude</dt>
+                    <dd>{{ nascente.longitude }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <h2>Documentos carregados</h2>
+
+        {% if documentos %}
+            {% for doc in documentos %}
+                <div class="doc-linha">
+                    {{ icone('pdf') }}
+                    <span class="doc-nome">{{ doc.nome }}</span>
+                    <div class="doc-botoes">
+                        <a class="btn btn-verde btn-pequeno"
+                           href="{{ url_for('abrirDocumento', nascente_id=nascente.id, documento_id=doc.id) }}"
+                           target="_blank" rel="noopener noreferrer">Visualizar</a>
+
+                        <form action="{{ url_for('removerDocumento', nascente_id=nascente.id, documento_id=doc.id) }}"
+                              method="POST"
+                              onsubmit="return confirm('Tem certeza de que deseja excluir este documento?');">
+                            <button type="submit" class="btn btn-vermelho btn-pequeno">Excluir</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="vazio">Nenhum documento disponível para essa nascente.</p>
+        {% endif %}
+
+        <div class="caixa-adicionar">
+            <h2>Adicionar documentos</h2>
+
+            <form action="{{ url_for('adicionarDocumento', nascente_id=nascente.id) }}"
+                  method="POST" enctype="multipart/form-data">
+                <div class="linha-upload">
+                    <label for="documentos">Selecione um arquivo PDF:</label>
+                    <input class="entrada" type="file" id="documentos" name="documentos" accept=".pdf" required>
+                    <button type="submit" class="btn btn-verde btn-pequeno">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

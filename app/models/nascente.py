@@ -15,6 +15,8 @@ class Nascente(db.Model):
 
     visitas = db.relationship("VisitaNascente", back_populates="nascente", cascade="all, delete-orphan", order_by="desc(VisitaNascente.dataVisita)")
 
+    documentos = db.relationship("DocumentoNascente",back_populates="nascente",cascade="all, delete-orphan")
+
     def __init__(self, endereco, latitude, longitude, imagem, descricao, status):
         self.endereco = endereco
         self.latitude = latitude

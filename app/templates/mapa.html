@@ -1,211 +1,247 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa de Nascentes</title>
+{% extends "base.html" %}
+{% from "_icones.html" import icone, pin %}
 
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+{% block titulo %}Mapa de nascentes{% endblock %}
+{% block classe_body %}pagina-mapa{% endblock %}
+{% block avisos %}{% endblock %}
+{% block footer %}{% endblock %}
 
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
-    #map { width: 100vw; height: 100vh; }
+{% block head %}
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+{% endblock %}
 
-    
-    #btnCadastrar {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 10;
-      padding: 12px 18px;
-      border: none;
-      border-radius: 6px;
-      background: #4285f4;
-      color: white;
-      cursor: pointer;
-      font-size: 15px;
-    }
+{% block conteudo %}
+    <div id="mapa" role="application" aria-label="Mapa de nascentes de Pará de Minas"></div>
 
-    #mensagemCadastro {
-      display: none;
-      position: absolute;
-      top: 70px;
-      left: 20px;
-      z-index: 10;
-      background: white;
-      padding: 10px 14px;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.2);
-    }
+    <button type="button" id="btnCadastrar" class="btn btn-azul mapa-btn-cadastrar">Cadastrar nascente</button>
+    <div id="mensagemCadastro" class="mapa-aviso" role="status" hidden></div>
 
-    .marcador {
-      width: 28px;
-      height: 28px;
-      background: #e74c3c;
-      border: 2px solid #fff;
-      border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, .4);
-      cursor: pointer;
-    }
+    <button type="button" id="btnLegenda" class="mapa-info" aria-expanded="false" aria-controls="legenda" aria-label="Legenda do mapa">
+        {{ icone('info') }}
+    </button>
 
-    .popup {
-      text-align: center;
-      font-family: sans-serif;
-    }
+    <aside id="legenda" class="legenda" hidden>
+        <h2>Legenda de cores</h2>
+        <ul>
+            <li>{{ pin('#4cc23b') }} Nascente aprovada</li>
+            <li>{{ pin('#f5c518') }} Aguardando validação</li>
+            <li>{{ pin('#e53935') }} Nascente desaprovada</li>
+            <li><span class="ponto-usuario"></span> Sua localização</li>
+        </ul>
+    </aside>
 
-    .popup img {
-      width: 100%;
-      max-width: 300px;
-      border-radius: 4px;
-      display: block;
-      margin-bottom: 6px;
-    }
+    <dialog id="tutorial" class="modal" aria-labelledby="tutorialTitulo">
+        <h2 id="tutorialTitulo">Para cadastrar uma nascente:</h2>
+        <ol>
+            <li>Clique no ponto do mapa onde a nascente está localizada.</li>
+            <li>Um marcador será colocado no local escolhido. Clique nele para continuar.</li>
+            <li>Informe o endereço, envie uma foto e descreva a nascente.</li>
+            <li>Pronto! Sua nascente será analisada pela equipe antes de aparecer no mapa.</li>
+        </ol>
+        <div class="modal-rodape">
+            <button type="button" id="fecharTutorial" class="btn btn-azul">Fechar</button>
+        </div>
+    </dialog>
+{% endblock %}
 
-    .popup .endereco {
-      display: block;
-      margin-bottom: 4px;
-    }
+{% block scripts %}
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script>
+        const NASCENTES = {{ nascentesJSON | safe }};
+        const IS_ADMIN = {{ 'true' if session.get('tipoUsuario') == 'ADMINISTRADOR' else 'false' }};
+        const LOGADO = {{ 'true' if session.get('usuario') else 'false' }};
+        const URL_LOGIN = {{ url_for('login') | tojson }};
 
-    .popup .descricao {
-      display: block;
-      margin-bottom: 10px;
-      font-size: 13px;
-      color: #555;
-    }
+        const PARA_DE_MINAS = { lat: -19.857, lng: -44.601 };
+        // RESTRIÇÃO PARA DE MINAS (descomentar os blocos abaixo para reativar)
+        // const MAX_BOUNDS = [
+        //   [-44.70, -19.94],
+        //   [-44.50, -19.78]
+        // ];
 
-    .popup a {
-      display: inline-block;
-      padding: 8px 12px;
-      background: #4285f4;
-      color: #fff;
-      border-radius: 4px;
-      text-decoration: none;
-    }
-  </style>
-</head>
-<body>
+        const CORES_STATUS = { APROVADA: '#4cc23b', PENDENTE: '#f5c518', DESAPROVADA: '#e53935' };
+        const ROTULOS_STATUS = { APROVADA: 'Aprovada', PENDENTE: 'Pendente', DESAPROVADA: 'Desaprovada' };
 
-  <div id="map"></div>
+        const map = new maplibregl.Map({
+            container: 'mapa',
+            style: 'https://tiles.openfreemap.org/styles/bright',
+            center: [PARA_DE_MINAS.lng, PARA_DE_MINAS.lat],
+            zoom: 13,
+            // maxBounds: MAX_BOUNDS,
+            // maxBoundsViscosity: 1.0,
+            minZoom: 11,
+            maxZoom: 17
+        });
+        map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
-  <button id="btnCadastrar">Cadastrar nascente</button>
-  <div id="mensagemCadastro">
-    Clique no mapa para escolher a localização da nascente.
-  </div>
+        /* ---------- Localização do usuário (com cache) ---------- */
+        const CHAVE_CACHE_LOCALIZACAO = 'mapaLocalizacaoUsuario';
 
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+        function obterLocalizacaoCacheada() {
+            try {
+                const bruto = localStorage.getItem(CHAVE_CACHE_LOCALIZACAO);
+                if (!bruto) return null;
+                const dados = JSON.parse(bruto);
+                if (typeof dados.lat === 'number' && typeof dados.lng === 'number') {
+                    return dados;
+                }
+            } catch (e) {}
+            return null;
+        }
 
-  <script>
-    const NASCENTES = {{ nascentesJSON | safe }};
+        function aplicarLocalizacao(lat, lng) {
+            const el = document.createElement('div');
+            el.className = 'marcador-usuario';
+            el.title = 'Sua localização';
+            new maplibregl.Marker({ element: el })
+                .setLngLat([lng, lat])
+                .addTo(map);
+            map.flyTo({ center: [lng, lat] });
+        }
 
-    const PARA_DE_MINAS = { lat: -19.857, lng: -44.601 };
+        function iniciarLocalizacaoUsuario() {
+            const cache = obterLocalizacaoCacheada();
+            if (cache) {
+                aplicarLocalizacao(cache.lat, cache.lng);
+                return;
+            }
+            if (!navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    localStorage.setItem(CHAVE_CACHE_LOCALIZACAO, JSON.stringify({ lat: lat, lng: lng }));
+                    aplicarLocalizacao(lat, lng);
+                },
+                function () {
+                    // Permissão negada/indisponível: nada é salvo em cache,
+                    // então na próxima recarga da página o navegador será consultado novamente.
+                },
+                { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+            );
+        }
+        iniciarLocalizacaoUsuario();
 
-    const MAX_BOUNDS = [
-      [-44.70, -19.94],
-      [-44.50, -19.78]
-    ];
+        /* ---------- Marcadores e popups das nascentes ---------- */
+        function escapeHTML(valor) {
+            const div = document.createElement('div');
+            div.textContent = valor == null ? '' : String(valor);
+            return div.innerHTML;
+        }
 
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: 'https://tiles.openfreemap.org/styles/liberty',
-      center: [PARA_DE_MINAS.lng, PARA_DE_MINAS.lat],
-      zoom: 13,
-      maxBounds: MAX_BOUNDS,
-      maxBoundsViscosity: 1.0,
-      minZoom: 11,
-      maxZoom: 18
-    });
+        function pinSVG(cor) {
+            return '<svg viewBox="0 0 24 32" aria-hidden="true" focusable="false">' +
+                '<path d="M12 1C5.9 1 1 5.8 1 11.8 1 20 12 31 12 31s11-11 11-19.2C23 5.8 18.1 1 12 1z" fill="' + cor + '" stroke="#fff" stroke-width="1.6"/>' +
+                '<circle cx="12" cy="11.8" r="4.3" fill="#fff" fill-opacity=".92"/></svg>';
+        }
 
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+        function buildPopupHTML(nascente) {
+            const googleMapsURL = `https://www.google.com/maps/search/?api=1&query=${nascente.latitude},${nascente.longitude}`;
+            const status = String(nascente.status || '').toUpperCase();
+            const imagem = nascente.imagem
+                ? `<img src="${escapeHTML(nascente.imagem)}" alt="Imagem da nascente" onerror="this.style.display='none'" />`
+                : '';
+            const descricao = nascente.descricao
+                ? `<span class="descricao">${escapeHTML(nascente.descricao)}</span>`
+                : '';
+            const selo = ROTULOS_STATUS[status]
+                ? `<span class="selo selo-${status.toLowerCase()}">${ROTULOS_STATUS[status]}</span>`
+                : '';
+            const editar = IS_ADMIN
+                ? `<a class="btn btn-azul btn-pequeno" href="/dashboard/nascentes/${encodeURIComponent(nascente.id)}/editar">Editar</a>`
+                : '';
+            return `
+            <div class="popup">
+                ${imagem}
+                <strong>${escapeHTML(nascente.endereco)}</strong>
+                ${selo}
+                ${descricao}
+                <div class="popup-acoes">
+                    ${editar}
+                    <a class="btn btn-verde btn-pequeno" href="${googleMapsURL}" target="_blank" rel="noopener noreferrer">Abrir no Google Maps</a>
+                </div>
+            </div>`;
+        }
 
-    function escapeHTML(valor) {
-      const div = document.createElement('div');
-      div.textContent = valor == null ? '' : String(valor);
-      return div.innerHTML;
-    }
+        NASCENTES.forEach(function (nascente) {
+            const cor = CORES_STATUS[String(nascente.status || '').toUpperCase()] || '#4aa3df';
+            const el = document.createElement('div');
+            el.className = 'marcador-pin';
+            el.title = nascente.endereco;
+            el.innerHTML = pinSVG(cor);
+            new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                .setLngLat([nascente.longitude, nascente.latitude])
+                .setPopup(new maplibregl.Popup({ maxWidth: '320px', offset: 38 }).setHTML(buildPopupHTML(nascente)))
+                .addTo(map);
+        });
 
-    function buildPopupHTML(nascente) {
-      const googleMapsURL = `https://www.google.com/maps/search/?api=1&query=${nascente.latitude},${nascente.longitude}`;
+        /* ---------- Legenda ---------- */
+        const btnLegenda = document.getElementById('btnLegenda');
+        const legenda = document.getElementById('legenda');
+        btnLegenda.addEventListener('click', function () {
+            const abrir = legenda.hidden;
+            legenda.hidden = !abrir;
+            btnLegenda.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+        });
 
-      const imagem = nascente.imagem
-        ? `<img src="${escapeHTML(nascente.imagem)}" alt="Imagem da nascente" onerror="this.style.display='none'" />`
-        : '';
+        /* ---------- Cadastro de nascente (tutorial + clique no mapa) ---------- */
+        let modoCadastro = false;
+        let marcadorCadastro = null;
 
-      const descricao = nascente.descricao
-        ? `<span class="descricao">${escapeHTML(nascente.descricao)}</span>`
-        : '';
+        const btnCadastrar = document.getElementById('btnCadastrar');
+        const mensagemCadastro = document.getElementById('mensagemCadastro');
+        const tutorial = document.getElementById('tutorial');
 
-      return `
-      <div class="popup">
-        ${imagem}
-        <strong class="endereco">${escapeHTML(nascente.endereco)}</strong>
-        ${descricao}
-          <a href="/dashboard/nascentes/${nascente.id}/editar">Editar</a>
-          <a href="${googleMapsURL}" target="_blank" rel="noopener noreferrer">
-            Abrir no Google Maps
-          </a>
-        </div>`;
-    }
+        function iniciarModoCadastro() {
+            modoCadastro = true;
+            mensagemCadastro.hidden = false;
+            mensagemCadastro.textContent = 'Clique no mapa para escolher a localização da nascente.';
+            btnCadastrar.disabled = true;
+        }
 
-    let modoCadastro = false;
-    let marcadorCadastro = null;
+        btnCadastrar.addEventListener('click', function () {
+            if (!LOGADO) {
+                window.location.href = URL_LOGIN;
+                return;
+            }
+            if (typeof tutorial.showModal === 'function') {
+                tutorial.showModal();
+            } else {
+                iniciarModoCadastro();
+            }
+        });
 
-    const btnCadastrar = document.getElementById("btnCadastrar");
-    const mensagemCadastro = document.getElementById("mensagemCadastro");
+        document.getElementById('fecharTutorial').addEventListener('click', function () {
+            tutorial.close();
+            iniciarModoCadastro();
+        });
 
-    btnCadastrar.addEventListener("click", function () {
-        modoCadastro = true;
+        map.on('click', function (e) {
+            if (!modoCadastro) {
+                return;
+            }
 
-        mensagemCadastro.style.display = "block";
-        mensagemCadastro.textContent =
-            "Clique no mapa para escolher a localização da nascente.";
+            const latitude = e.lngLat.lat;
+            const longitude = e.lngLat.lng;
 
-        btnCadastrar.disabled = true;
-        btnCadastrar.style.opacity = "0.6";
-    });
+            if (marcadorCadastro) {
+                marcadorCadastro.remove();
+            }
 
-    map.on("click", function (e) {
+            const el = document.createElement('div');
+            el.className = 'marcador-pin';
+            el.title = 'Clique para cadastrar a nascente neste local';
+            el.innerHTML = pinSVG('#004aad');
 
-      if (!modoCadastro) {
-          return;
-      }
+            marcadorCadastro = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                .setLngLat([longitude, latitude])
+                .addTo(map);
 
-      const latitude = e.lngLat.lat;
-      const longitude = e.lngLat.lng;
+            mensagemCadastro.textContent = 'Localização selecionada. Clique no marcador para cadastrar.';
 
-      if (marcadorCadastro) {
-          marcadorCadastro.remove();
-      }
-
-      marcadorCadastro = new maplibregl.Marker()
-          .setLngLat([longitude, latitude])
-          .addTo(map);
-
-      mensagemCadastro.textContent =
-          "Localização selecionada. Clique no marcador para cadastrar.";
-
-      marcadorCadastro.getElement().addEventListener("click", function () {
-
-          window.location.href =
-              `/mapa/registrar?latitude=${latitude}&longitude=${longitude}`;
-
-      });
-    });
-
-    NASCENTES.forEach(function (nascente) {
-      const el = document.createElement('div');
-      el.className = 'marcador';
-      el.title = nascente.endereco;
-
-      new maplibregl.Marker({ element: el })
-        .setLngLat([nascente.longitude, nascente.latitude])
-        .setPopup(
-          new maplibregl.Popup({ maxWidth: '320px' })
-            .setHTML(buildPopupHTML(nascente))
-        )
-        .addTo(map);
-    });
-  </script>
-
-</body>
-</html>
+            el.addEventListener('click', function () {
+                window.location.href = `/mapa/registrar?latitude=${latitude}&longitude=${longitude}`;
+            });
+        });
+    </script>
+{% endblock %}

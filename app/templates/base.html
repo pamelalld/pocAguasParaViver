@@ -1,0 +1,66 @@
+{% from "_icones.html" import icone %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}Início{% endblock %} · Águas para Viver</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='../static/img/logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="{% block classe_body %}{% endblock %}">
+
+{% block header %}
+    {% set logado = session.get('usuario') %}
+    {% set admin = session.get('tipoUsuario') == 'ADMINISTRADOR' %}
+    <header class="site-header">
+        <a class="marca" href="{{ url_for('mainPage') }}" aria-label="Águas para Viver — página inicial">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Águas para Viver">
+        </a>
+
+        <nav class="nav" aria-label="Navegação principal">
+            {% if logado %}
+                <span class="nav-usuario">{{ logado }}</span>
+                <span class="nav-sep" aria-hidden="true"></span>
+            {% endif %}
+
+            {% if admin %}
+                <a class="nav-item {{ 'ativo' if request.path.startswith('/dashboard') }}"
+                   href="{{ url_for('dashboardNascentes') }}" title="Painel de nascentes" aria-label="Painel de nascentes">
+                    {{ icone('painel') }}
+                </a>
+            {% endif %}
+
+            <a class="nav-item {{ 'ativo' if request.path.startswith('/mapa') }}"
+               href="{{ url_for('mapa') }}" title="Mapa de nascentes" aria-label="Mapa de nascentes">
+                {{ icone('mapa') }}
+            </a>
+
+            {% if logado %}
+                <a class="nav-item" href="{{ url_for('logout') }}" title="Sair" aria-label="Sair">{{ icone('sair') }}</a>
+            {% else %}
+                <a class="nav-item" href="{{ url_for('login') }}" title="Entrar" aria-label="Entrar">{{ icone('entrar') }}</a>
+            {% endif %}
+        </nav>
+    </header>
+{% endblock %}
+
+<main class="principal">
+    {% block avisos %}{% include "_avisos.html" %}{% endblock %}
+    {% block conteudo %}{% endblock %}
+</main>
+
+{% block footer %}
+    <footer class="site-footer">
+        <img src="{{ url_for('static', filename='img/brasao-prefeitura.png') }}" alt="Prefeitura de Pará de Minas">
+    </footer>
+{% endblock %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
